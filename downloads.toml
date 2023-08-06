@@ -1,0 +1,44 @@
+[bootloader]
+hekate = { repo = "CTCaer/hekate", regex = "hekate_ctcaer_(?:\\d+\\.\\d+\\.\\d+)_Nyx_(?:\\d+\\.\\d+\\.\\d+)(?:_v\\d)?\\.zip" }
+
+[firmware]
+atmosphere = { repo = "Atmosphere-NX/Atmosphere", regex = "atmosphere-(?:\\d+\\.\\d+\\.\\d+)-master-(?:\\w+)\\+hbl-(?:\\d+\\.\\d+\\.\\d+)\\+hbmenu-(?:\\d+\\.\\d+\\.\\d+)\\.zip" }
+sigpatches = { url = "https://sigmapatches.coomer.party/sigpatches.zip" }
+
+[payloads]
+fusee = { repo = "Atmosphere-NX/Atmosphere", file = "fusee.bin" }
+# lockpick-rcm = { repo = "shchmue/Lockpick_RCM", file = "", regex = "" }
+lockpick-rcm = { url = "https://web.archive.org/web/20230508014140mp_/https://github.com/shchmue/Lockpick_RCM/releases/download/v1.9.10/Lockpick_RCM.bin" }
+tegra-explorer = { repo = "suchmememanyskill/TegraExplorer", file = "TegraExplorer.bin" }
+
+[nro_apps]
+# aio-switch-updater = { repo = "HamletDuFromage/aio-switch-updater", file = "aio-switch-updater.zip" }
+appstore = { repo = "fortheusers/hb-appstore", file = "appstore.nro" }
+dbi = { repo = "rashevskyv/dbi", file = "DBI.nro" }
+edizon = { repo = "WerWolv/EdiZon", file = "EdiZon.nro" }
+ftpd = { repo = "mtheall/ftpd", file = "ftpd.nro" }
+jksv = { repo = "J-D-K/JKSV", file = "JKSV.nro" }
+linkalho = { repo = "rdmrocha/linkalho", regex = "linkalho-v(?:\\d+\\.\\d+\\.\\d+)\\.zip" }
+# lithium = { url = "https://tinfoil.media/repo/Lithium%20%5B16.0%5D%5Bv2%5D.zip" }
+nx-shell = { repo = "joel16/NX-Shell", file = "NX-Shell.nro" }
+# nxdt-rw-poc = { repo = "", file = "", regex = "" } # Unreleased (GitHub Actions)
+nx-dump-tool = { repo = "DarkMatterCore/nxdumptool", file = "nxdumptool.nro" }
+nx-themes-installer = { repo = "exelix11/SwitchThemeInjector", file = "NXThemesInstaller.nro" }
+sigpatch-updater = { repo = "ITotalJustice/sigpatch-updater", file = "sigpatch-updater.nro" }
+simple-mod-downloader = { repo = "PoloNX/SimpleModDownloader", file = "SimpleModDownloader.nro" }
+simple-mod-manager = { repo = "nadrino/SimpleModManager", file = "SimpleModManager.nro" }
+# tinfoil-installer = { url = "https://tinfoil.media/repo/Tinfoil%20Self%20Installer%20%5B050000BADDAD0000%5D%5B16.0%5D%5Bv2%5D.zip" }
+vgedit = { repo = "vgmoose/vgedit", file = "vgedit.nro" }
+
+[atmosphere_modules]
+nx-ovlloader = { repo = "WerWolv/nx-ovlloader", file = "nx-ovlloader.zip" }
+mission-control = { repo = "ndeadly/MissionControl", regex = "MissionControl-(?:\\d+\\.\\d+\\.\\d+)-master-(?:\\w+).zip" }
+
+[overlays]
+tesla-menu = { repo = "WerWolv/Tesla-Menu", file = "ovlmenu.zip" }
+emuiibo = { repo = "XorTroll/emuiibo", file = "emuiibo.zip" } # info: combined zip
+# edizon = { repo = "WerWolv/EdiZon", file = "ovlEdiZon.ovl" } # not working
+edizon = { repo = "proferabg/EdiZon-Overlay", file = "ovlEdiZon.ovl" }
+sys-modules = { repo = "WerWolv/ovl-sysmodules", file = "ovlSysmodules.ovl" }
+status-monitor = { repo = "masagrator/Status-Monitor-Overlay", file = "Status-Monitor-Overlay.ovl" }
+sys-patch = { repo = "ITotalJustice/sys-patch", file = "sys-patch.zip" } # info: combined zip
