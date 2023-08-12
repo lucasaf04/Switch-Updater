@@ -47,9 +47,18 @@ class Downloader:
             setattr(self, field.name, kwargs.get(field.name, None))
 
     @staticmethod
-    def _get_latest_release(repo: str) -> Optional[Any]:
+    def _get_latest_release(repo: str, token: Optional[str]) -> Optional[Any]:
+        if token is not None:
+            headers = {
+                "Accept": "application/vnd.github+json",
+                "Authorization": f"Bearer {token}",
+                "X-GitHub-Api-Version": "2022-11-28",
+            }
+        else:
+            headers = None
+
         url = f"https://api.github.com/repos/{repo}/releases/latest"
-        response = requests.get(url, timeout=5)
+        response = requests.get(url, headers=headers, timeout=5)
 
         if response.status_code == 200:
             return response.json()
@@ -97,9 +106,11 @@ class Downloader:
                         return lock
         return None
 
-    def download(self) -> Tuple[Optional[Path], Optional[List[str]]]:
+    def download(
+        self, token: Optional[str]
+    ) -> Tuple[Optional[Path], Optional[List[str]]]:
         if self.repo is not None:
-            latest_release = self._get_latest_release(self.repo)
+            latest_release = self._get_latest_release(self.repo, token)
 
             if latest_release is not None:
                 asset = self._get_asset(latest_release["assets"])
@@ -181,14 +192,14 @@ class Section:
     downloader_list: List[Downloader]
 
 
-def download_all(section_list: List[Section]) -> None:
+def download_all(section_list: List[Section], token: Optional[str]) -> None:
     ROOT_SAVE_PATH.mkdir(exist_ok=True)
 
     for section in section_list:
         print(f"Downloading {section.id.name.lower()}:")
 
         for downloader in section.downloader_list:
-            downloaded_file_path, to_remove = downloader.download()
+            downloaded_file_path, to_remove = downloader.download(token)
             save_path = SAVE_PATHS[section.id]
 
             if downloaded_file_path is not None:
@@ -323,9 +334,19 @@ def move_nro_apps_into_folders() -> None:
             folder.mkdir(exist_ok=True)
             item.rename(folder / item.name)
 
-if __name__ == "__main__":
-    # todo: add GitHub token to remove the 40 requests per hour restriction
 
+def get_github_token() -> Optional[str]:
+    with open(Path.cwd() / "github.token", "r", encoding="utf-8") as token_file:
+        token = token_file.read().strip()
+
+    if re.match(r"^ghp_[a-zA-Z0-9]{36}$", token):
+        return token
+
+    debug(f"Invalid GitHub token `{token}`")
+    return None
+
+
+if __name__ == "__main__":
     DOWNLOADS_TOML: Path = Path.cwd() / "downloads.toml"
     DOWNLOADS_LOCK: Path = Path.cwd() / "downloads.lock"
     DOWNLOADS_TEMP_PATH: Path = Path(tempfile.mkdtemp())
@@ -362,7 +383,8 @@ if __name__ == "__main__":
 
     downloads_section_list = parse_downloads(DOWNLOADS_TOML)
     DOWNLOADS_LOCK_LIST = parse_downloads_lock(DOWNLOADS_LOCK)
-    download_all(downloads_section_list)
+    github_token = get_github_token()
+    download_all(downloads_section_list, github_token)
     save_downloads_lock(DOWNLOADS_LOCK)
 
     if cli_args.mariko:
