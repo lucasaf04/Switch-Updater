@@ -5,11 +5,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "Python: main",
             "type": "python",
             "request": "launch",
-            "program": "${file}",
-            "args": ["--debug"],
+            "program": "main.py",
+            "args": ["--debug", "--mariko", "--pack=DEBUG"],
             "console": "integratedTerminal",
             "justMyCode": true
         }

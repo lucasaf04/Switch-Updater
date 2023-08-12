@@ -6,7 +6,7 @@ import zipfile
 from dataclasses import dataclass, fields
 from enum import Enum, auto
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from zipfile import ZipFile
 
 import requests
@@ -40,6 +40,7 @@ class Downloader:
     file: Optional[str]
     regex: Optional[str]
     url: Optional[str]
+    remove: Optional[List[str]]
 
     def __init__(self, **kwargs: Optional[str]):
         for field in fields(self):
@@ -96,7 +97,7 @@ class Downloader:
                         return lock
         return None
 
-    def download(self) -> Optional[Path]:
+    def download(self) -> Tuple[Optional[Path], Optional[List[str]]]:
         if self.repo is not None:
             latest_release = self._get_latest_release(self.repo)
 
@@ -119,32 +120,33 @@ class Downloader:
                     if cached_lock is not None:
                         if cached_lock == current_lock:
                             print(f"\t{self.repo}: Already up to date")
-                            return None
+                            return None, None
                         DOWNLOADS_LOCK_LIST.remove(cached_lock)
 
                     DOWNLOADS_LOCK_LIST.append(current_lock)
                 else:
                     print(f"Unable to get matching asset for `{self.repo}`")
-                    return None
+                    return None, None
             else:
                 print(f"Unable to get latest release for `{self.repo}`")
-                return None
+                return None, None
         elif self.url is not None:
             asset_url = self.url
             asset_name = Path(asset_url).name
             message = f"\t{asset_name}"
         else:
             print("unreachable")
-            return None
+            return None, None
 
         downloaded_file_path = self._download_file_to_temp_dir(asset_url)
 
-        if downloaded_file_path:
+        if downloaded_file_path is not None:
             print(message)
-            return downloaded_file_path
+            debug(f"File downloaded to `{downloaded_file_path}`")
+            return downloaded_file_path, self.remove
 
         print(f"Failed to download `{asset_name}` from `{asset_url}`")
-        return None
+        return None, None
 
 
 class SectionId(Enum):
@@ -186,16 +188,17 @@ def download_all(section_list: List[Section]) -> None:
         print(f"Downloading {section.id.name.lower()}:")
 
         for downloader in section.downloader_list:
-            downloaded_file_path = downloader.download()
+            downloaded_file_path, to_remove = downloader.download()
             save_path = SAVE_PATHS[section.id]
 
             if downloaded_file_path is not None:
-                debug(f"File downloaded to `{downloaded_file_path}`")
-
                 if downloaded_file_path.suffix == ".zip":
                     _handle_zip(downloaded_file_path, save_path)
                 else:
                     downloaded_file_path.replace(save_path / downloaded_file_path.name)
+
+                if to_remove is not None:
+                    remove_from_root(to_remove)
 
 
 def _handle_zip(downloaded_file_path: Path, save_path: Path):
@@ -304,6 +307,22 @@ def create_payload():
             break
 
 
+def remove_from_root(to_remove: List[str]):
+    for item in to_remove:
+        item = ROOT_SAVE_PATH / item
+        if item.is_dir():
+            shutil.rmtree(item)
+        elif item.is_file():
+            item.unlink()
+
+
+def move_nro_apps_into_folders() -> None:
+    for item in SAVE_PATHS[SectionId.NRO_APPS].iterdir():
+        if item.is_file() and item.suffix == ".nro":
+            folder = item.parent / item.stem
+            folder.mkdir(exist_ok=True)
+            item.rename(folder / item.name)
+
 if __name__ == "__main__":
     # todo: add GitHub token to remove the 40 requests per hour restriction
 
@@ -348,9 +367,12 @@ if __name__ == "__main__":
 
     if cli_args.mariko:
         create_payload()
-        # todo: remove reboot_to_payload.nro
-        
-    # todo: move .nro apps into folders
+        remove_from_root(["switch/reboot_to_payload.nro"])
+    else:
+        # todo
+        print("not implemented")
+
+    move_nro_apps_into_folders()
 
     if CONFIG_FILES_PATH.exists():
         shutil.copytree(CONFIG_FILES_PATH, ROOT_SAVE_PATH, dirs_exist_ok=True)

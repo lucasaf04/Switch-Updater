@@ -1,6 +1,6 @@
 {
   "python.analysis.typeCheckingMode": "basic",
-  "cSpell.words": ["bootloader", "ctcaer", "hekate", "sdout"],
+  "cSpell.words": ["bootloader", "ctcaer", "hekate", "sdout", "mariko"],
   "files.associations": {
     "downloads.lock": "toml"
   }

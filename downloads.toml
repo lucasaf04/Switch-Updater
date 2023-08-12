@@ -12,10 +12,9 @@ lockpick-rcm = { url = "https://web.archive.org/web/20230508014140mp_/https://gi
 tegra-explorer = { repo = "suchmememanyskill/TegraExplorer", file = "TegraExplorer.bin" }
 
 [nro_apps]
-# aio-switch-updater = { repo = "HamletDuFromage/aio-switch-updater", file = "aio-switch-updater.zip" }
 appstore = { repo = "fortheusers/hb-appstore", file = "appstore.nro" }
+breeze = { repo = "tomvita/Breeze-Beta", file = "Breeze.zip", remove = ["switch/edizon", "switch/reboot_to_hekate.nro"] }
 dbi = { repo = "rashevskyv/dbi", file = "DBI.nro" }
-edizon = { repo = "WerWolv/EdiZon", file = "EdiZon.nro" }
 ftpd = { repo = "mtheall/ftpd", file = "ftpd.nro" }
 jksv = { repo = "J-D-K/JKSV", file = "JKSV.nro" }
 linkalho = { repo = "rdmrocha/linkalho", regex = "linkalho-v(?:\\d+\\.\\d+\\.\\d+)\\.zip" }
@@ -37,8 +36,9 @@ mission-control = { repo = "ndeadly/MissionControl", regex = "MissionControl-(?:
 [overlays]
 tesla-menu = { repo = "WerWolv/Tesla-Menu", file = "ovlmenu.zip" }
 emuiibo = { repo = "XorTroll/emuiibo", file = "emuiibo.zip" } # info: combined zip
-# edizon = { repo = "WerWolv/EdiZon", file = "ovlEdiZon.ovl" } # not working
 edizon = { repo = "proferabg/EdiZon-Overlay", file = "ovlEdiZon.ovl" }
 sys-modules = { repo = "WerWolv/ovl-sysmodules", file = "ovlSysmodules.ovl" }
 status-monitor = { repo = "masagrator/Status-Monitor-Overlay", file = "Status-Monitor-Overlay.ovl" }
 sys-patch = { repo = "ITotalJustice/sys-patch", file = "sys-patch.zip" } # info: combined zip
+
+# [tegraexplorer_scripts]
