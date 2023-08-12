@@ -1,11 +1,11 @@
 import argparse
-import os
 import re
 import shutil
 import tempfile
 import zipfile
 from dataclasses import dataclass, fields
 from enum import Enum, auto
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 from zipfile import ZipFile
 
@@ -57,9 +57,9 @@ class Downloader:
         return None
 
     @staticmethod
-    def _download_file_to_temp_dir(url: str) -> Optional[str]:
+    def _download_file_to_temp_dir(url: str) -> Optional[Path]:
         try:
-            file_path = os.path.join(DOWNLOADS_TEMP_PATH, os.path.basename(url))
+            file_path = DOWNLOADS_TEMP_PATH / Path(url).name
             response = requests.get(url, timeout=5)
 
             if response.status_code == 200:
@@ -96,7 +96,7 @@ class Downloader:
                         return lock
         return None
 
-    def download(self) -> Optional[str]:
+    def download(self) -> Optional[Path]:
         if self.repo is not None:
             latest_release = self._get_latest_release(self.repo)
 
@@ -131,7 +131,7 @@ class Downloader:
                 return None
         elif self.url is not None:
             asset_url = self.url
-            asset_name = os.path.basename(asset_url)
+            asset_name = Path(asset_url).name
             message = f"\t{asset_name}"
         else:
             print("unreachable")
@@ -179,64 +179,30 @@ class Section:
     downloader_list: List[Downloader]
 
 
-def _get_file_extension(file_path: str) -> str:
-    _, extension = os.path.splitext(file_path)
-    return extension
-
-
-def _create_empty_folder(directory_path: str) -> None:
-    try:
-        os.makedirs(directory_path, exist_ok=True)
-        debug(f"Directory `{directory_path}` created or already exists")
-    except Exception as err:
-        raise RuntimeError(f"Error while creating directory: {err}") from err
-
-
-def _move_to_folder(source_path: str, target_path: str) -> None:
-    try:
-        target_path = os.path.join(target_path, os.path.basename(source_path))
-
-        # replace the file if it already exists
-        if os.path.exists(target_path):
-            os.remove(target_path)
-
-        shutil.move(source_path, target_path)
-        debug(f"File moved to `{target_path}`")
-    except Exception as err:
-        raise RuntimeError(f"Error while saving the file: {err}") from err
-
-
-def _move_folder_contents(source_folder: str, destination_folder: str):
-    for item in os.listdir(source_folder):
-        source_item = os.path.join(source_folder, item)
-        destination_item = os.path.join(destination_folder, item)
-        shutil.move(source_item, destination_item)
-
-
 def download_all(section_list: List[Section]) -> None:
-    _create_empty_folder(ROOT_SAVE_PATH)
+    ROOT_SAVE_PATH.mkdir(exist_ok=True)
 
     for section in section_list:
         print(f"Downloading {section.id.name.lower()}:")
 
         for downloader in section.downloader_list:
             downloaded_file_path = downloader.download()
-            save_path = ROOT_SAVE_PATH + SAVE_PATHS[section.id]
+            save_path = SAVE_PATHS[section.id]
 
             if downloaded_file_path is not None:
                 debug(f"File downloaded to `{downloaded_file_path}`")
 
-                if _get_file_extension(downloaded_file_path) == ".zip":
+                if downloaded_file_path.suffix == ".zip":
                     _handle_zip(downloaded_file_path, save_path)
                 else:
-                    _move_to_folder(downloaded_file_path, save_path)
+                    downloaded_file_path.replace(save_path / downloaded_file_path.name)
 
 
-def _handle_zip(downloaded_file_path: str, save_path: str):
+def _handle_zip(downloaded_file_path: Path, save_path: Path):
     try:
         with zipfile.ZipFile(downloaded_file_path, "r") as zip_ref:
 
-            def _extract_zip(zip_file: ZipFile, target_path: str):
+            def _extract_zip(zip_file: ZipFile, target_path: Path):
                 zip_file.extractall(target_path)
                 debug(f"Zip file `{zip_file.filename}` extracted to `{target_path}`")
 
@@ -252,9 +218,9 @@ def _handle_zip(downloaded_file_path: str, save_path: str):
             elif is_non_root_zip:
                 _extract_zip(zip_ref, DOWNLOADS_TEMP_PATH)
 
-                extracted_folder = os.path.join(DOWNLOADS_TEMP_PATH, zip_contents[0])
+                extracted_folder = DOWNLOADS_TEMP_PATH / zip_contents[0]
+                shutil.copytree(extracted_folder, ROOT_SAVE_PATH, dirs_exist_ok=True)
 
-                _move_folder_contents(extracted_folder, ROOT_SAVE_PATH)
                 debug(f"`{extracted_folder}` moved to `{ROOT_SAVE_PATH}`")
                 shutil.rmtree(extracted_folder)
             else:
@@ -263,7 +229,7 @@ def _handle_zip(downloaded_file_path: str, save_path: str):
         raise RuntimeError(f"Error while extracting the zip file: {err}") from err
 
 
-def parse_downloads(file_path: str) -> List[Section]:
+def parse_downloads(file_path: Path) -> List[Section]:
     with open(file_path, "r", encoding="utf-8") as toml_file:
         toml_string = toml_file.read()
 
@@ -299,7 +265,7 @@ def parse_downloads(file_path: str) -> List[Section]:
     return section_list
 
 
-def parse_downloads_lock(file_path: str) -> List[DownloaderLock]:
+def parse_downloads_lock(file_path: Path) -> List[DownloaderLock]:
     try:
         with open(file_path, "r", encoding="utf-8") as toml_file:
             toml_string = toml_file.read()
@@ -311,7 +277,7 @@ def parse_downloads_lock(file_path: str) -> List[DownloaderLock]:
         return []
 
 
-def save_downloads_lock(file_path: str) -> None:
+def save_downloads_lock(file_path: Path) -> None:
     packages_list = [
         {
             "repo": lock.repo,
@@ -329,23 +295,35 @@ def save_downloads_lock(file_path: str) -> None:
         toml_file.write(toml_string)
 
 
+def create_payload():
+    for file in ROOT_SAVE_PATH.iterdir():
+        if re.search(r"hekate_ctcaer_(?:\d+\.\d+\.\d+)\.bin", file.name) is not None:
+            new_path = file.with_name("payload.bin")
+            file.rename(new_path)
+            debug(f"Renamed `{file}` to `{new_path}`")
+            break
+
+
 if __name__ == "__main__":
-    DOWNLOADS_TOML: str = "downloads.toml"
-    DOWNLOADS_LOCK: str = "downloads.lock"
-    DOWNLOADS_TEMP_PATH: str = tempfile.mkdtemp()
-    ROOT_SAVE_PATH: str = os.getcwd() + "/sd"
-    SAVE_PATHS: Dict[SectionId, str] = {
-        SectionId.BOOTLOADER: "/",
-        SectionId.FIRMWARE: "/",
-        SectionId.PAYLOADS: "/bootloader/payloads",
-        SectionId.NRO_APPS: "/switch",
-        SectionId.ATMOSPHERE_MODULES: "/atmosphere/contents",
-        SectionId.OVERLAYS: "/switch/.overlays",
+    # todo: add GitHub token to remove the 40 requests per hour restriction
+
+    DOWNLOADS_TOML: Path = Path.cwd() / "downloads.toml"
+    DOWNLOADS_LOCK: Path = Path.cwd() / "downloads.lock"
+    DOWNLOADS_TEMP_PATH: Path = Path(tempfile.mkdtemp())
+    ROOT_SAVE_PATH: Path = Path.cwd() / "sd"
+    SAVE_PATHS: Dict[SectionId, Path] = {
+        SectionId.BOOTLOADER: ROOT_SAVE_PATH,
+        SectionId.FIRMWARE: ROOT_SAVE_PATH,
+        SectionId.PAYLOADS: ROOT_SAVE_PATH / "bootloader/payloads",
+        SectionId.NRO_APPS: ROOT_SAVE_PATH / "switch",
+        SectionId.ATMOSPHERE_MODULES: ROOT_SAVE_PATH / "atmosphere/contents",
+        SectionId.OVERLAYS: ROOT_SAVE_PATH / "switch/.overlays",
     }
-    CONFIG_FILES_PATH: str = os.getcwd() + "/config_files"
+    CONFIG_FILES_PATH: Path = Path.cwd() / "config_files"
 
     cli_parser = argparse.ArgumentParser()
     cli_parser.add_argument("--debug", action="store_true", help="Enable debug mode")
+    cli_parser.add_argument("--mariko", action="store_true", help="Enable mariko mode")
     cli_parser.add_argument(
         "--rebuild", action="store_true", help="Delete previously downloaded files"
     )
@@ -355,29 +333,26 @@ if __name__ == "__main__":
     DEBUG_ENABLED: bool = cli_args.debug
 
     if cli_args.rebuild:
-        if os.path.exists(ROOT_SAVE_PATH):
+        if ROOT_SAVE_PATH.exists():
             shutil.rmtree(ROOT_SAVE_PATH)
             debug(f"Removed `{ROOT_SAVE_PATH}`")
 
-        if os.path.exists(DOWNLOADS_LOCK):
-            os.remove(DOWNLOADS_LOCK)
+        if DOWNLOADS_LOCK.exists():
+            DOWNLOADS_LOCK.unlink()
             debug(f"Removed `{DOWNLOADS_LOCK}`")
 
-    # todo: don't use a global DOWNLOADS_LOCK_SET ??
     downloads_section_list = parse_downloads(DOWNLOADS_TOML)
     DOWNLOADS_LOCK_LIST = parse_downloads_lock(DOWNLOADS_LOCK)
     download_all(downloads_section_list)
     save_downloads_lock(DOWNLOADS_LOCK)
 
-    for filename in os.listdir(ROOT_SAVE_PATH):
-        if re.search(r"hekate_ctcaer_(?:\d+\.\d+\.\d+)\.bin", filename) is not None:
-            old_name = f"{ROOT_SAVE_PATH}/{filename}"
-            new_name = f"{ROOT_SAVE_PATH}/payload.bin"
-            os.rename(old_name, new_name)
-            debug(f"Renamed `{old_name}` to `{new_name}`")
-            break
+    if cli_args.mariko:
+        create_payload()
+        # todo: remove reboot_to_payload.nro
+        
+    # todo: move .nro apps into folders
 
-    if os.path.exists(CONFIG_FILES_PATH):
+    if CONFIG_FILES_PATH.exists():
         shutil.copytree(CONFIG_FILES_PATH, ROOT_SAVE_PATH, dirs_exist_ok=True)
         print("Copied config files")
 
