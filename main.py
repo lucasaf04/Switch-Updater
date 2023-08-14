@@ -95,8 +95,8 @@ class Downloader:
 
         return None
 
-    def _get_cached_lock(self) -> Optional[DownloaderLock]:
-        for lock in DOWNLOADS_LOCK_LIST:
+    def _get_cached_lock(self, lock_list: List[DownloaderLock]) -> Optional[DownloaderLock]:
+        for lock in lock_list:
             if lock.repo == self.repo:
                 if self.file is not None:
                     if lock.asset_name == self.file:
@@ -107,7 +107,7 @@ class Downloader:
         return None
 
     def download(
-        self, token: Optional[str]
+        self, lock_list: List[DownloaderLock], token: Optional[str],
     ) -> Tuple[Optional[Path], Optional[List[str]]]:
         if self.repo is not None:
             latest_release = self._get_latest_release(self.repo, token)
@@ -120,7 +120,7 @@ class Downloader:
                     asset_url = asset["browser_download_url"]
                     message = f"\t{self.repo}: {asset_name}"
 
-                    cached_lock = self._get_cached_lock()
+                    cached_lock = self._get_cached_lock(lock_list)
                     current_lock = DownloaderLock(
                         repo=self.repo,
                         tag_name=latest_release["tag_name"],
@@ -132,9 +132,9 @@ class Downloader:
                         if cached_lock == current_lock:
                             print(f"\t{self.repo}: Already up to date")
                             return None, None
-                        DOWNLOADS_LOCK_LIST.remove(cached_lock)
+                        lock_list.remove(cached_lock)
 
-                    DOWNLOADS_LOCK_LIST.append(current_lock)
+                    lock_list.append(current_lock)
                 else:
                     print(f"Unable to get matching asset for `{self.repo}`")
                     return None, None
@@ -192,14 +192,14 @@ class Section:
     downloader_list: List[Downloader]
 
 
-def download_all(section_list: List[Section], token: Optional[str]) -> None:
+def download_all(section_list: List[Section], lock_list: List[DownloaderLock], token: Optional[str]) -> None:
     ROOT_SAVE_PATH.mkdir(exist_ok=True)
 
     for section in section_list:
         print(f"Downloading {section.id.name.lower()}:")
 
         for downloader in section.downloader_list:
-            downloaded_file_path, to_remove = downloader.download(token)
+            downloaded_file_path, to_remove = downloader.download(lock_list, token)
             save_path = SAVE_PATHS[section.id]
 
             if downloaded_file_path is not None:
@@ -243,8 +243,8 @@ def _handle_zip(downloaded_file_path: Path, save_path: Path):
         raise RuntimeError(f"Error while extracting the zip file: {err}") from err
 
 
-def parse_downloads(file_path: Path) -> List[Section]:
-    with open(file_path, "r", encoding="utf-8") as toml_file:
+def parse_downloads_toml() -> List[Section]:
+    with open(DOWNLOADS_TOML, "r", encoding="utf-8") as toml_file:
         toml_string = toml_file.read()
 
     toml_dict: Dict[str, Dict[str, Dict[str, str]]] = toml.loads(toml_string)
@@ -279,9 +279,9 @@ def parse_downloads(file_path: Path) -> List[Section]:
     return section_list
 
 
-def parse_downloads_lock(file_path: Path) -> List[DownloaderLock]:
+def parse_downloads_lock() -> List[DownloaderLock]:
     try:
-        with open(file_path, "r", encoding="utf-8") as toml_file:
+        with open(DOWNLOADS_LOCK, "r", encoding="utf-8") as toml_file:
             toml_string = toml_file.read()
 
         toml_dict = toml.loads(toml_string)
@@ -291,7 +291,7 @@ def parse_downloads_lock(file_path: Path) -> List[DownloaderLock]:
         return []
 
 
-def save_downloads_lock(file_path: Path) -> None:
+def save_downloads_lock(lock_list: List[DownloaderLock]) -> None:
     packages_list = [
         {
             "repo": lock.repo,
@@ -299,13 +299,13 @@ def save_downloads_lock(file_path: Path) -> None:
             "asset_name": lock.asset_name,
             "asset_updated_at": lock.asset_updated_at,
         }
-        for lock in DOWNLOADS_LOCK_LIST
+        for lock in lock_list
     ]
 
     toml_dict = {"package": packages_list}
     toml_string = toml.dumps(toml_dict)
 
-    with open(file_path, "w", encoding="utf-8") as toml_file:
+    with open(DOWNLOADS_LOCK, "w", encoding="utf-8") as toml_file:
         toml_file.write(toml_string)
 
 
@@ -381,11 +381,11 @@ if __name__ == "__main__":
             DOWNLOADS_LOCK.unlink()
             debug(f"Removed `{DOWNLOADS_LOCK}`")
 
-    downloads_section_list = parse_downloads(DOWNLOADS_TOML)
-    DOWNLOADS_LOCK_LIST = parse_downloads_lock(DOWNLOADS_LOCK)
+    downloads_section_list = parse_downloads_toml()
+    downloads_lock_list = parse_downloads_lock()
     github_token = get_github_token()
-    download_all(downloads_section_list, github_token)
-    save_downloads_lock(DOWNLOADS_LOCK)
+    download_all(downloads_section_list, downloads_lock_list, github_token)
+    save_downloads_lock(downloads_lock_list)
 
     if cli_args.mariko:
         create_payload()
