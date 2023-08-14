@@ -30,7 +30,7 @@ Use this [link](https://github.com/settings/tokens/new?description=switch-update
 
 ## Example configuration
 
-Check [downloads.toml](./downloads.toml) and [config files](./config_files/)
+Check [downloads.toml](./downloads.toml) and [config files](./config_files/).
 
 ## Usage
 
