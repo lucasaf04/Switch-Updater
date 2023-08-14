@@ -3,10 +3,10 @@ import re
 import shutil
 import tempfile
 import zipfile
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 from zipfile import ZipFile
 
 import requests
@@ -40,11 +40,16 @@ class Downloader:
     file: Optional[str]
     regex: Optional[str]
     url: Optional[str]
-    remove: Optional[List[str]]
 
-    def __init__(self, **kwargs: Optional[str]):
-        for field in fields(self):
-            setattr(self, field.name, kwargs.get(field.name, None))
+    def __post_init__(self):
+        if (self.repo is None) == (self.url is None):
+            raise RuntimeError("Either `repo` or `url` must be provided")
+
+        if (self.repo is not None) and ((self.file is None) == (self.regex is None)):
+            raise RuntimeError("Either `file` or `regex` must be provided")
+
+        if (self.url is not None) and (self.file is not None or self.regex is not None):
+            raise RuntimeError("`url` must be provided alone")
 
     @staticmethod
     def _get_latest_release(repo: str, token: Optional[str]) -> Optional[Any]:
@@ -95,7 +100,9 @@ class Downloader:
 
         return None
 
-    def _get_cached_lock(self, lock_list: List[DownloaderLock]) -> Optional[DownloaderLock]:
+    def _get_cached_lock(
+        self, lock_list: List[DownloaderLock]
+    ) -> Optional[DownloaderLock]:
         for lock in lock_list:
             if lock.repo == self.repo:
                 if self.file is not None:
@@ -107,8 +114,10 @@ class Downloader:
         return None
 
     def download(
-        self, lock_list: List[DownloaderLock], token: Optional[str],
-    ) -> Tuple[Optional[Path], Optional[List[str]]]:
+        self,
+        lock_list: List[DownloaderLock],
+        token: Optional[str],
+    ) -> Optional[Path]:
         if self.repo is not None:
             latest_release = self._get_latest_release(self.repo, token)
 
@@ -131,16 +140,16 @@ class Downloader:
                     if cached_lock is not None:
                         if cached_lock == current_lock:
                             print(f"\t{self.repo}: Already up to date")
-                            return None, None
+                            return None
                         lock_list.remove(cached_lock)
 
                     lock_list.append(current_lock)
                 else:
                     print(f"Unable to get matching asset for `{self.repo}`")
-                    return None, None
+                    return None
             else:
                 print(f"Unable to get latest release for `{self.repo}`")
-                return None, None
+                return None
         elif self.url is not None:
             asset_url = self.url
             asset_name = Path(asset_url).name
@@ -153,10 +162,21 @@ class Downloader:
         if downloaded_file_path is not None:
             print(message)
             debug(f"File downloaded to `{downloaded_file_path}`")
-            return downloaded_file_path, self.remove
+            return downloaded_file_path
 
         print(f"Failed to download `{asset_name}` from `{asset_url}`")
-        return None, None
+        return None
+
+
+class DownloaderInitError(RuntimeError):
+    def __init__(self, message, table_name):
+        super().__init__(f"{message} in table `{table_name}`")
+
+
+@dataclass
+class SectionItem:
+    downloader: Downloader
+    to_remove: List[str]
 
 
 class SectionId(Enum):
@@ -188,17 +208,19 @@ class SectionId(Enum):
 @dataclass
 class Section:
     id: SectionId
-    downloader_list: List[Downloader]
+    items: List[SectionItem]
 
 
-def download_all(section_list: List[Section], lock_list: List[DownloaderLock], token: Optional[str]) -> None:
+def download_all(
+    section_list: List[Section], lock_list: List[DownloaderLock], token: Optional[str]
+) -> None:
     ROOT_SAVE_PATH.mkdir(exist_ok=True)
 
     for section in section_list:
         print(f"Downloading {section.id.name.lower()}:")
 
-        for downloader in section.downloader_list:
-            downloaded_file_path, to_remove = downloader.download(lock_list, token)
+        for item in section.items:
+            downloaded_file_path = item.downloader.download(lock_list, token)
             save_path = SAVE_PATHS[section.id]
 
             if downloaded_file_path is not None:
@@ -207,8 +229,7 @@ def download_all(section_list: List[Section], lock_list: List[DownloaderLock], t
                 else:
                     downloaded_file_path.replace(save_path / downloaded_file_path.name)
 
-                if to_remove is not None:
-                    remove_from_root(to_remove)
+                remove_from_root(item.to_remove)
 
 
 def _handle_zip(downloaded_file_path: Path, save_path: Path):
@@ -246,34 +267,30 @@ def parse_downloads_toml() -> List[Section]:
     with open(DOWNLOADS_TOML, "r", encoding="utf-8") as toml_file:
         toml_string = toml_file.read()
 
-    toml_dict: Dict[str, Dict[str, Dict[str, str]]] = toml.loads(toml_string)
+    toml_dict: Dict[str, Dict[str, Dict[str, Any]]] = toml.loads(toml_string)
 
     section_list: List[Section] = []
     for s_name, s_data in toml_dict.items():
-        downloader_list: List[Downloader] = []
+        asset_list: List[SectionItem] = []
         for d_name, d_data in s_data.items():
-            dwl = Downloader(**d_data)
-
-            if (dwl.repo is None) == (dwl.url is None):
-                raise RuntimeError(
-                    f"Either `repo` or `url` must be provided in table `{d_name}`"
+            try:
+                downloader = Downloader(
+                    d_data.get("repo"),
+                    d_data.get("file"),
+                    d_data.get("regex"),
+                    d_data.get("url"),
                 )
+            except RuntimeError as err:
+                raise DownloaderInitError(str(err), d_name) from None
 
-            if (dwl.repo is not None) and ((dwl.file is None) == (dwl.regex is None)):
-                raise RuntimeError(
-                    f"Either `file` or `regex` must be provided in table `{d_name}`"
+            asset_list.append(
+                SectionItem(
+                    downloader,
+                    d_data.get("remove", []),
                 )
+            )
 
-            if (dwl.url is not None) and (
-                dwl.file is not None or dwl.regex is not None
-            ):
-                raise RuntimeError(f"`url` must be provided alone in table `{d_name}`")
-
-            downloader_list.append(dwl)
-
-        section_list.append(
-            Section(id=SectionId.parse(s_name), downloader_list=downloader_list)
-        )
+        section_list.append(Section(SectionId.parse(s_name), asset_list))
 
     return section_list
 
@@ -364,7 +381,9 @@ if __name__ == "__main__":
     cli_parser = argparse.ArgumentParser()
     cli_parser.add_argument("--debug", action="store_true", help="Enable debug mode")
     cli_parser.add_argument("--mariko", action="store_true", help="Enable mariko mode")
-    cli_parser.add_argument("--no-config", action="store_true", help="Disable copying config files")
+    cli_parser.add_argument(
+        "--no-config", action="store_true", help="Disable copying config files"
+    )
     cli_parser.add_argument(
         "--rebuild", action="store_true", help="Delete previously downloaded files"
     )
