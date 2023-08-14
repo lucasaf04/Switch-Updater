@@ -63,7 +63,7 @@ class Downloader:
         if response.status_code == 200:
             return response.json()
 
-        print(f"Request failed with status code: {response.status_code}")
+        print(f"GitHub API Request failed. Status code: {response.status_code}")
         return None
 
     @staticmethod
@@ -146,8 +146,7 @@ class Downloader:
             asset_name = Path(asset_url).name
             message = f"\t{asset_name}"
         else:
-            print("unreachable")
-            return None, None
+            raise AssertionError("This branch should be unreachable.")
 
         downloaded_file_path = self._download_file_to_temp_dir(asset_url)
 
@@ -394,7 +393,7 @@ if __name__ == "__main__":
         remove_from_root(["switch/reboot_to_payload.nro"])
     else:
         # todo
-        print("not implemented")
+        print("Erista specific functionality not implemented")
 
     move_nro_apps_into_folders()
 
