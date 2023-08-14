@@ -37,18 +37,18 @@ class DownloaderLock:
 @dataclass
 class Downloader:
     repo: Optional[str]
-    file: Optional[str]
-    regex: Optional[str]
+    asset_name: Optional[str]
+    asset_regex: Optional[str]
     url: Optional[str]
 
     def __post_init__(self):
         if (self.repo is None) == (self.url is None):
             raise RuntimeError("Either `repo` or `url` must be provided")
 
-        if (self.repo is not None) and ((self.file is None) == (self.regex is None)):
-            raise RuntimeError("Either `file` or `regex` must be provided")
+        if (self.repo is not None) and ((self.asset_name is None) == (self.asset_regex is None)):
+            raise RuntimeError("Either `asset_name` or `asset_regex` must be provided")
 
-        if (self.url is not None) and (self.file is not None or self.regex is not None):
+        if (self.url is not None) and (self.asset_name is not None or self.asset_regex is not None):
             raise RuntimeError("`url` must be provided alone")
 
     @staticmethod
@@ -89,13 +89,13 @@ class Downloader:
 
     def _get_asset(self, assets: Any) -> Optional[Any]:
         for asset in assets:
-            name: str = asset["name"]
+            asset_name: str = asset["name"]
 
-            if self.file is not None:
-                if name.find(self.file) != -1:
+            if self.asset_name is not None:
+                if asset_name == self.asset_name:
                     return asset
-            elif self.regex is not None:
-                if re.search(self.regex, name) is not None:
+            elif self.asset_regex is not None:
+                if re.search(self.asset_regex, asset_name) is not None:
                     return asset
 
         return None
@@ -105,11 +105,11 @@ class Downloader:
     ) -> Optional[DownloaderLock]:
         for lock in lock_list:
             if lock.repo == self.repo:
-                if self.file is not None:
-                    if lock.asset_name == self.file:
+                if self.asset_name is not None:
+                    if lock.asset_name == self.asset_name:
                         return lock
-                elif self.regex is not None:
-                    if re.search(self.regex, lock.asset_name) is not None:
+                elif self.asset_regex is not None:
+                    if re.search(self.asset_regex, lock.asset_name) is not None:
                         return lock
         return None
 
@@ -276,8 +276,8 @@ def parse_downloads_toml() -> List[Section]:
             try:
                 downloader = Downloader(
                     d_data.get("repo"),
-                    d_data.get("file"),
-                    d_data.get("regex"),
+                    d_data.get("asset_name"),
+                    d_data.get("asset_regex"),
                     d_data.get("url"),
                 )
             except RuntimeError as err:
