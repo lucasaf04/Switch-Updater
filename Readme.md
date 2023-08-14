@@ -50,5 +50,4 @@ options:
 
 ## Todo
 
-- [ ] Erista mode (default behavior)
-- [ ] Add `tegraexplorer_scripts` section
+- [ ] Erista mode (default behavior, no `--mariko` flag)

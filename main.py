@@ -6,7 +6,7 @@ import zipfile
 from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from zipfile import ZipFile
 
 import requests
@@ -39,20 +39,31 @@ class Downloader:
     repo: Optional[str]
     asset_name: Optional[str]
     asset_regex: Optional[str]
+    file: Optional[str]
     url: Optional[str]
 
     def __post_init__(self):
         if (self.repo is None) == (self.url is None):
             raise RuntimeError("Either `repo` or `url` must be provided")
 
-        if (self.repo is not None) and ((self.asset_name is None) == (self.asset_regex is None)):
-            raise RuntimeError("Either `asset_name` or `asset_regex` must be provided")
+        if (self.repo is not None) and (
+            (self.asset_name is None)
+            == (self.asset_regex is None)
+            == (self.file is None)
+        ):
+            raise RuntimeError(
+                "Either `asset_name`, `asset_regex` or `file` must be provided"
+            )
 
-        if (self.url is not None) and (self.asset_name is not None or self.asset_regex is not None):
+        if (self.url is not None) and (
+            self.asset_name is not None
+            or self.asset_regex is not None
+            or self.file is not None
+        ):
             raise RuntimeError("`url` must be provided alone")
 
     @staticmethod
-    def _get_latest_release(repo: str, token: Optional[str]) -> Optional[Any]:
+    def _github_api_request(url: str, token: Optional[str]) -> Optional[Any]:
         if token is not None:
             headers = {
                 "Accept": "application/vnd.github+json",
@@ -62,14 +73,28 @@ class Downloader:
         else:
             headers = None
 
-        url = f"https://api.github.com/repos/{repo}/releases/latest"
-        response = requests.get(url, headers=headers, timeout=5)
+        response = requests.get(url=url, headers=headers, timeout=5)
 
         if response.status_code == 200:
             return response.json()
 
         print(f"GitHub API Request failed. Status code: {response.status_code}")
         return None
+
+    @staticmethod
+    def _get_latest_release(repo: str, token: Optional[str]) -> Optional[Any]:
+        url = f"https://api.github.com/repos/{repo}/releases/latest"
+        return Downloader._github_api_request(url, token)
+
+    @staticmethod
+    def _get_default_branch(repo: str, token: Optional[str]) -> Optional[str]:
+        url = f"https://api.github.com/repos/{repo}"
+        response = Downloader._github_api_request(url, token)
+
+        if response is None:
+            return None
+
+        return response.get("default_branch")
 
     @staticmethod
     def _download_file_to_temp_dir(url: str) -> Optional[Path]:
@@ -113,27 +138,37 @@ class Downloader:
                         return lock
         return None
 
-    def download(
+    def _prepare_download(
         self,
         lock_list: List[DownloaderLock],
         token: Optional[str],
-    ) -> Optional[Path]:
-        if self.repo is not None:
-            latest_release = self._get_latest_release(self.repo, token)
+    ) -> Optional[Tuple[str, str, str]]:
+        if self.repo is not None and self.file is not None:
+            default_branch = Downloader._get_default_branch(self.repo, token)
+
+            if default_branch is not None:
+                url = f"https://raw.githubusercontent.com/{self.repo}/{default_branch}/{self.file}"
+                filename = Path(self.file).name
+                message = f"\t{self.repo}: {filename}"
+            else:
+                print(f"Unable to get default branch for `{self.repo}`")
+                return None
+        elif self.repo is not None:
+            latest_release = Downloader._get_latest_release(self.repo, token)
 
             if latest_release is not None:
                 asset = self._get_asset(latest_release["assets"])
 
                 if asset is not None:
-                    asset_name = asset["name"]
-                    asset_url = asset["browser_download_url"]
-                    message = f"\t{self.repo}: {asset_name}"
+                    filename = asset["name"]
+                    url = asset["browser_download_url"]
+                    message = f"\t{self.repo}: {filename}"
 
                     cached_lock = self._get_cached_lock(lock_list)
                     current_lock = DownloaderLock(
                         repo=self.repo,
                         tag_name=latest_release["tag_name"],
-                        asset_name=asset_name,
+                        asset_name=filename,
                         asset_updated_at=asset["updated_at"],
                     )
 
@@ -151,20 +186,32 @@ class Downloader:
                 print(f"Unable to get latest release for `{self.repo}`")
                 return None
         elif self.url is not None:
-            asset_url = self.url
-            asset_name = Path(asset_url).name
-            message = f"\t{asset_name}"
+            url = self.url
+            filename = Path(url).name
+            message = f"\t{filename}"
         else:
             raise AssertionError("This branch should be unreachable.")
 
-        downloaded_file_path = self._download_file_to_temp_dir(asset_url)
+        return (url, filename, message)
+
+    def download(
+        self,
+        lock_list: List[DownloaderLock],
+        token: Optional[str],
+    ) -> Optional[Path]:
+        preparation = self._prepare_download(lock_list, token)
+        if preparation is None:
+            return None
+
+        url, filename, message = preparation
+        downloaded_file_path = Downloader._download_file_to_temp_dir(url)
 
         if downloaded_file_path is not None:
             print(message)
             debug(f"File downloaded to `{downloaded_file_path}`")
             return downloaded_file_path
 
-        print(f"Failed to download `{asset_name}` from `{asset_url}`")
+        print(f"Failed to download `{filename}` from `{url}`")
         return None
 
 
@@ -186,6 +233,7 @@ class SectionId(Enum):
     NRO_APPS = auto()
     ATMOSPHERE_MODULES = auto()
     OVERLAYS = auto()
+    TEGRAEXPLORER_SCRIPTS = auto()
 
     @staticmethod
     def parse(section_name: str):
@@ -201,6 +249,8 @@ class SectionId(Enum):
             return SectionId.ATMOSPHERE_MODULES
         if section_name == "overlays":
             return SectionId.OVERLAYS
+        if section_name == "tegraexplorer_scripts":
+            return SectionId.TEGRAEXPLORER_SCRIPTS
 
         raise RuntimeError(f"Unsupported section name: `{section_name}`")
 
@@ -227,6 +277,7 @@ def download_all(
                 if downloaded_file_path.suffix == ".zip":
                     _handle_zip(downloaded_file_path, save_path)
                 else:
+                    save_path.mkdir(parents=True, exist_ok=True)
                     downloaded_file_path.replace(save_path / downloaded_file_path.name)
 
                 remove_from_root(item.to_remove)
@@ -278,6 +329,7 @@ def parse_downloads_toml() -> List[Section]:
                     d_data.get("repo"),
                     d_data.get("asset_name"),
                     d_data.get("asset_regex"),
+                    d_data.get("file"),
                     d_data.get("url"),
                 )
             except RuntimeError as err:
@@ -337,11 +389,12 @@ def create_payload():
 def remove_from_root(to_remove: List[str]):
     for item in to_remove:
         item = ROOT_SAVE_PATH / item
-        if item.is_dir():
-            shutil.rmtree(item)
-        elif item.is_file():
-            item.unlink()
-        debug(f"Removed `{item}`")
+        if item.exists():
+            if item.is_dir():
+                shutil.rmtree(item)
+            elif item.is_file():
+                item.unlink()
+            debug(f"Removed `{item}`")
 
 
 def move_nro_apps_into_folders() -> None:
@@ -375,6 +428,7 @@ if __name__ == "__main__":
         SectionId.NRO_APPS: ROOT_SAVE_PATH / "switch",
         SectionId.ATMOSPHERE_MODULES: ROOT_SAVE_PATH / "atmosphere/contents",
         SectionId.OVERLAYS: ROOT_SAVE_PATH / "switch/.overlays",
+        SectionId.TEGRAEXPLORER_SCRIPTS: ROOT_SAVE_PATH / "tegraexplorer/scripts",
     }
     CONFIG_FILES_PATH: Path = Path.cwd() / "config_files"
 

@@ -42,4 +42,7 @@ sys-modules = { repo = "WerWolv/ovl-sysmodules", asset_name = "ovlSysmodules.ovl
 status-monitor = { repo = "masagrator/Status-Monitor-Overlay", asset_name = "Status-Monitor-Overlay.ovl" }
 sys-patch = { repo = "ITotalJustice/sys-patch", asset_name = "sys-patch.zip" } # info: combined zip
 
-# [tegraexplorer_scripts]
+[tegraexplorer_scripts]
+dump-saves = { repo = "suchmememanyskill/TegraScript", file = "scripts/Dump_saves.te" }
+system-restore = { repo = "suchmememanyskill/TegraScript", file = "scripts/SystemRestoreV3.te" }
+create-dirs = { repo = "suchmememanyskill/TegraScript", file = "scripts/createDirs.te" }
