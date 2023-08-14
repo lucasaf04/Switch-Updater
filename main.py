@@ -325,6 +325,7 @@ def remove_from_root(to_remove: List[str]):
             shutil.rmtree(item)
         elif item.is_file():
             item.unlink()
+        debug(f"Removed `{item}`")
 
 
 def move_nro_apps_into_folders() -> None:
@@ -364,6 +365,7 @@ if __name__ == "__main__":
     cli_parser = argparse.ArgumentParser()
     cli_parser.add_argument("--debug", action="store_true", help="Enable debug mode")
     cli_parser.add_argument("--mariko", action="store_true", help="Enable mariko mode")
+    cli_parser.add_argument("--no-config", action="store_true", help="Disable copying config files")
     cli_parser.add_argument(
         "--rebuild", action="store_true", help="Delete previously downloaded files"
     )
@@ -396,12 +398,13 @@ if __name__ == "__main__":
 
     move_nro_apps_into_folders()
 
-    if CONFIG_FILES_PATH.exists():
-        shutil.copytree(CONFIG_FILES_PATH, ROOT_SAVE_PATH, dirs_exist_ok=True)
-        print("Copied config files")
+    if not cli_args.no_config:
+        if CONFIG_FILES_PATH.exists():
+            shutil.copytree(CONFIG_FILES_PATH, ROOT_SAVE_PATH, dirs_exist_ok=True)
+            debug(f"Copied `{CONFIG_FILES_PATH}` to `{ROOT_SAVE_PATH}`")
 
     if cli_args.pack is not None:
         shutil.make_archive(cli_args.pack, "zip", ROOT_SAVE_PATH)
-        print(
-            f"The directory '{ROOT_SAVE_PATH}' has been packed into '{cli_args.pack}.zip'"
+        debug(
+            f"The directory `{ROOT_SAVE_PATH}` has been packed into `{cli_args.pack}.zip`"
         )
