@@ -41,5 +41,3 @@ edizon = { repo = "proferabg/EdiZon-Overlay", file = "ovlEdiZon.ovl" }
 sys-modules = { repo = "WerWolv/ovl-sysmodules", file = "ovlSysmodules.ovl" }
 status-monitor = { repo = "masagrator/Status-Monitor-Overlay", file = "Status-Monitor-Overlay.ovl" }
 sys-patch = { repo = "ITotalJustice/sys-patch", file = "sys-patch.zip" } # info: combined zip
-
-# [tegraexplorer_scripts]

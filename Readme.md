@@ -50,4 +50,5 @@ options:
 
 ## Todo
 
-- [ ] Implement Erista mode (default behavior)
+- [ ] Erista mode (default behavior)
+- [ ] Add `tegraexplorer_scripts` section
