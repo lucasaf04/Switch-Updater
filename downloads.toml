@@ -26,6 +26,7 @@ nx-themes-installer = { repo = "exelix11/SwitchThemeInjector", file = "NXThemesI
 sigpatch-updater = { repo = "ITotalJustice/sigpatch-updater", file = "sigpatch-updater.nro" }
 simple-mod-downloader = { repo = "PoloNX/SimpleModDownloader", file = "SimpleModDownloader.nro" }
 simple-mod-manager = { repo = "nadrino/SimpleModManager", file = "SimpleModManager.nro" }
+switch-ident = { repo = "joel16/SwitchIdent", file = "SwitchIdent.nro" }
 # tinfoil-installer = { url = "https://tinfoil.media/repo/Tinfoil%20Self%20Installer%20%5B050000BADDAD0000%5D%5B16.0%5D%5Bv2%5D.zip" }
 vgedit = { repo = "vgmoose/vgedit", file = "vgedit.nro" }
 
