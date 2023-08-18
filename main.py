@@ -1,8 +1,7 @@
-import argparse
 import re
 import shutil
 import tempfile
-import zipfile
+from argparse import ArgumentParser
 from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
@@ -285,7 +284,7 @@ def download_all(
 
 def _handle_zip(downloaded_file_path: Path, save_path: Path):
     try:
-        with zipfile.ZipFile(downloaded_file_path, "r") as zip_ref:
+        with ZipFile(downloaded_file_path, "r") as zip_ref:
 
             def _extract_zip(zip_file: ZipFile, target_path: Path):
                 zip_file.extractall(target_path)
@@ -416,36 +415,7 @@ def get_github_token() -> Optional[str]:
     return None
 
 
-if __name__ == "__main__":
-    DOWNLOADS_TOML: Path = Path.cwd() / "downloads.toml"
-    DOWNLOADS_LOCK: Path = Path.cwd() / "downloads.lock"
-    DOWNLOADS_TEMP_PATH: Path = Path(tempfile.mkdtemp())
-    ROOT_SAVE_PATH: Path = Path.cwd() / "sd"
-    SAVE_PATHS: Dict[SectionId, Path] = {
-        SectionId.BOOTLOADER: ROOT_SAVE_PATH,
-        SectionId.FIRMWARE: ROOT_SAVE_PATH,
-        SectionId.PAYLOADS: ROOT_SAVE_PATH / "bootloader/payloads",
-        SectionId.NRO_APPS: ROOT_SAVE_PATH / "switch",
-        SectionId.ATMOSPHERE_MODULES: ROOT_SAVE_PATH / "atmosphere/contents",
-        SectionId.OVERLAYS: ROOT_SAVE_PATH / "switch/.overlays",
-        SectionId.TEGRAEXPLORER_SCRIPTS: ROOT_SAVE_PATH / "tegraexplorer/scripts",
-    }
-    CONFIG_FILES_PATH: Path = Path.cwd() / "config_files"
-
-    cli_parser = argparse.ArgumentParser()
-    cli_parser.add_argument("--debug", action="store_true", help="Enable debug mode")
-    cli_parser.add_argument("--mariko", action="store_true", help="Enable mariko mode")
-    cli_parser.add_argument(
-        "--no-config", action="store_true", help="Disable copying config files"
-    )
-    cli_parser.add_argument(
-        "--rebuild", action="store_true", help="Delete previously downloaded files"
-    )
-    cli_parser.add_argument("--pack", help="Name of the zip file to create")
-    cli_args = cli_parser.parse_args()
-
-    DEBUG_ENABLED: bool = cli_args.debug
-
+def main() -> None:
     if cli_args.rebuild:
         if ROOT_SAVE_PATH.exists():
             shutil.rmtree(ROOT_SAVE_PATH)
@@ -480,3 +450,36 @@ if __name__ == "__main__":
         debug(
             f"The directory `{ROOT_SAVE_PATH}` has been packed into `{cli_args.pack}.zip`"
         )
+
+
+if __name__ == "__main__":
+    DOWNLOADS_TOML: Path = Path.cwd() / "downloads.toml"
+    DOWNLOADS_LOCK: Path = Path.cwd() / "downloads.lock"
+    DOWNLOADS_TEMP_PATH: Path = Path(tempfile.mkdtemp())
+    ROOT_SAVE_PATH: Path = Path.cwd() / "sd"
+    SAVE_PATHS: Dict[SectionId, Path] = {
+        SectionId.BOOTLOADER: ROOT_SAVE_PATH,
+        SectionId.FIRMWARE: ROOT_SAVE_PATH,
+        SectionId.PAYLOADS: ROOT_SAVE_PATH / "bootloader/payloads",
+        SectionId.NRO_APPS: ROOT_SAVE_PATH / "switch",
+        SectionId.ATMOSPHERE_MODULES: ROOT_SAVE_PATH / "atmosphere/contents",
+        SectionId.OVERLAYS: ROOT_SAVE_PATH / "switch/.overlays",
+        SectionId.TEGRAEXPLORER_SCRIPTS: ROOT_SAVE_PATH / "tegraexplorer/scripts",
+    }
+    CONFIG_FILES_PATH: Path = Path.cwd() / "config_files"
+
+    cli_parser = ArgumentParser()
+    cli_parser.add_argument("--debug", action="store_true", help="Enable debug mode")
+    cli_parser.add_argument("--mariko", action="store_true", help="Enable mariko mode")
+    cli_parser.add_argument(
+        "--no-config", action="store_true", help="Disable copying config files"
+    )
+    cli_parser.add_argument(
+        "--rebuild", action="store_true", help="Delete previously downloaded files"
+    )
+    cli_parser.add_argument("--pack", help="Name of the zip file to create")
+    cli_args = cli_parser.parse_args()
+
+    DEBUG_ENABLED: bool = cli_args.debug
+    
+    main()
