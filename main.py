@@ -1,7 +1,8 @@
+import logging as log
 import re
 import shutil
 import tempfile
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentTypeError
 from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
@@ -10,11 +11,6 @@ from zipfile import ZipFile
 
 import requests
 import toml
-
-
-def debug(*args, **kwargs) -> None:
-    if DEBUG_ENABLED:
-        print(*args, **kwargs)
 
 
 @dataclass
@@ -207,7 +203,7 @@ class Downloader:
 
         if downloaded_file_path is not None:
             print(message)
-            debug(f"File downloaded to `{downloaded_file_path}`")
+            log.info("File downloaded to `%s`", downloaded_file_path)
             return downloaded_file_path
 
         print(f"Failed to download `{filename}` from `{url}`")
@@ -288,7 +284,9 @@ def _handle_zip(downloaded_file_path: Path, save_path: Path):
 
             def _extract_zip(zip_file: ZipFile, target_path: Path):
                 zip_file.extractall(target_path)
-                debug(f"Zip file `{zip_file.filename}` extracted to `{target_path}`")
+                log.info(
+                    "Zip file `%s` extracted to `%s`", zip_file.filename, target_path
+                )
 
             zip_contents = zip_ref.namelist()
             is_single_file_zip = all("/" not in item for item in zip_contents)
@@ -305,7 +303,7 @@ def _handle_zip(downloaded_file_path: Path, save_path: Path):
                 extracted_folder = DOWNLOADS_TEMP_PATH / zip_contents[0]
                 shutil.copytree(extracted_folder, ROOT_SAVE_PATH, dirs_exist_ok=True)
 
-                debug(f"`{extracted_folder}` moved to `{ROOT_SAVE_PATH}`")
+                log.info("`%s` moved to `%s`", extracted_folder, ROOT_SAVE_PATH)
                 shutil.rmtree(extracted_folder)
             else:
                 _extract_zip(zip_ref, ROOT_SAVE_PATH)
@@ -381,7 +379,7 @@ def create_payload():
         if re.search(r"hekate_ctcaer_(?:\d+\.\d+\.\d+)\.bin", file.name) is not None:
             new_path = file.with_name("payload.bin")
             file.rename(new_path)
-            debug(f"Renamed `{file}` to `{new_path}`")
+            log.info("Renamed `%s` to `%s`", file, new_path)
             break
 
 
@@ -393,7 +391,7 @@ def remove_from_root(to_remove: List[str]):
                 shutil.rmtree(item)
             elif item.is_file():
                 item.unlink()
-            debug(f"Removed `{item}`")
+            log.info("Removed `%s`", item)
 
 
 def move_nro_apps_into_folders() -> None:
@@ -405,25 +403,54 @@ def move_nro_apps_into_folders() -> None:
 
 
 def get_github_token() -> Optional[str]:
-    with open(Path.cwd() / "github.token", "r", encoding="utf-8") as token_file:
+    with open(BASE_PATH / "github.token", "r", encoding="utf-8") as token_file:
         token = token_file.read().strip()
 
     if re.match(r"^ghp_[a-zA-Z0-9]{36}$", token):
         return token
 
-    debug(f"Invalid GitHub token `{token}`")
+    log.info("Invalid GitHub token `%s`", token)
     return None
 
 
+def valid_log_level(level: str):
+    numeric_level = getattr(log, level.upper(), None)
+    if not isinstance(numeric_level, int):
+        raise ArgumentTypeError(f"Invalid log level: `{level}`")
+    return level
+
+
 def main() -> None:
+    cli_parser = ArgumentParser()
+    cli_parser.add_argument(
+        "--log",
+        type=valid_log_level,
+        default="ERROR",
+        help=f"Set the log level: {', '.join(log.getLevelNamesMapping().keys())} (default ERROR)",
+    )
+    cli_parser.add_argument("--mariko", action="store_true", help="Enable mariko mode")
+    cli_parser.add_argument(
+        "--no-config", action="store_true", help="Disable copying config files"
+    )
+    cli_parser.add_argument(
+        "--rebuild", action="store_true", help="Delete previously downloaded files"
+    )
+    cli_parser.add_argument("--pack", help="Name of the zip file to create")
+    cli_args = cli_parser.parse_args()
+
+    log.basicConfig(
+        level=cli_args.log,
+        format="[%(asctime)s %(levelname)s %(name)s] %(message)s",
+    )
+
     if cli_args.rebuild:
         if ROOT_SAVE_PATH.exists():
             shutil.rmtree(ROOT_SAVE_PATH)
-            debug(f"Removed `{ROOT_SAVE_PATH}`")
+            log.info("Removed `%s`", ROOT_SAVE_PATH)
 
         if DOWNLOADS_LOCK.exists():
             DOWNLOADS_LOCK.unlink()
-            debug(f"Removed `{DOWNLOADS_LOCK}`")
+            log.info("Removed `%s`", DOWNLOADS_LOCK)
 
     downloads_section_list = parse_downloads_toml()
     downloads_lock_list = parse_downloads_lock()
@@ -443,20 +470,23 @@ def main() -> None:
     if not cli_args.no_config:
         if CONFIG_FILES_PATH.exists():
             shutil.copytree(CONFIG_FILES_PATH, ROOT_SAVE_PATH, dirs_exist_ok=True)
-            debug(f"Copied `{CONFIG_FILES_PATH}` to `{ROOT_SAVE_PATH}`")
+            log.info("Copied `%s` to `%s`", CONFIG_FILES_PATH, ROOT_SAVE_PATH)
 
     if cli_args.pack is not None:
         shutil.make_archive(cli_args.pack, "zip", ROOT_SAVE_PATH)
-        debug(
-            f"The directory `{ROOT_SAVE_PATH}` has been packed into `{cli_args.pack}.zip`"
+        log.info(
+            "The directory `%s` has been packed into `%s.zip`",
+            ROOT_SAVE_PATH,
+            cli_args.pack,
         )
 
 
 if __name__ == "__main__":
-    DOWNLOADS_TOML: Path = Path.cwd() / "downloads.toml"
-    DOWNLOADS_LOCK: Path = Path.cwd() / "downloads.lock"
+    BASE_PATH: Path = Path.cwd()
+    DOWNLOADS_TOML: Path = BASE_PATH / "downloads.toml"
+    DOWNLOADS_LOCK: Path = BASE_PATH / "downloads.lock"
     DOWNLOADS_TEMP_PATH: Path = Path(tempfile.mkdtemp())
-    ROOT_SAVE_PATH: Path = Path.cwd() / "sd"
+    ROOT_SAVE_PATH: Path = BASE_PATH / "sd"
     SAVE_PATHS: Dict[SectionId, Path] = {
         SectionId.BOOTLOADER: ROOT_SAVE_PATH,
         SectionId.FIRMWARE: ROOT_SAVE_PATH,
@@ -466,20 +496,6 @@ if __name__ == "__main__":
         SectionId.OVERLAYS: ROOT_SAVE_PATH / "switch/.overlays",
         SectionId.TEGRAEXPLORER_SCRIPTS: ROOT_SAVE_PATH / "tegraexplorer/scripts",
     }
-    CONFIG_FILES_PATH: Path = Path.cwd() / "config_files"
+    CONFIG_FILES_PATH: Path = BASE_PATH / "config_files"
 
-    cli_parser = ArgumentParser()
-    cli_parser.add_argument("--debug", action="store_true", help="Enable debug mode")
-    cli_parser.add_argument("--mariko", action="store_true", help="Enable mariko mode")
-    cli_parser.add_argument(
-        "--no-config", action="store_true", help="Disable copying config files"
-    )
-    cli_parser.add_argument(
-        "--rebuild", action="store_true", help="Delete previously downloaded files"
-    )
-    cli_parser.add_argument("--pack", help="Name of the zip file to create")
-    cli_args = cli_parser.parse_args()
-
-    DEBUG_ENABLED: bool = cli_args.debug
-    
     main()
