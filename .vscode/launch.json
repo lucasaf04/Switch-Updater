@@ -8,7 +8,7 @@
             "name": "Python: main",
             "type": "python",
             "request": "launch",
-            "program": "main.py",
+            "program": "src/main.py",
             "args": ["--debug", "--mariko", "--pack=DEBUG"],
             "console": "integratedTerminal",
             "justMyCode": true

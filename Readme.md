@@ -37,7 +37,7 @@ Check [downloads.toml](./downloads.toml) and [config files](./config_files/).
 ## Usage
 
 ```txt
-usage: python3 main.py [-h] [--debug] [--mariko] [--no-config] [--rebuild] [--pack PACK]
+usage: python3 src/main.py [-h] [--debug] [--mariko] [--no-config] [--rebuild] [--pack PACK]
 
 options:
   -h, --help   show this help message and exit
