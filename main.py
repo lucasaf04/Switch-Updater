@@ -421,12 +421,14 @@ def valid_log_level(level: str):
 
 
 def main() -> None:
+    valid_log_levels = logging.getLevelNamesMapping().keys()
+
     cli_parser = ArgumentParser()
     cli_parser.add_argument(
         "--log",
         type=valid_log_level,
         default="ERROR",
-        help=f"Set the log level: {', '.join(logging.getLevelNamesMapping().keys())} (default ERROR)",
+        help=f"Set the log level: {', '.join(valid_log_levels)} (default ERROR)",
     )
     cli_parser.add_argument("--mariko", action="store_true", help="Enable mariko mode")
     cli_parser.add_argument(
