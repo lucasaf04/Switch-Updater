@@ -1,4 +1,4 @@
-import logging as log
+import logging
 import re
 import shutil
 import tempfile
@@ -203,7 +203,7 @@ class Downloader:
 
         if downloaded_file_path is not None:
             print(message)
-            log.info("File downloaded to `%s`", downloaded_file_path)
+            logging.info("File downloaded to `%s`", downloaded_file_path)
             return downloaded_file_path
 
         print(f"Failed to download `{filename}` from `{url}`")
@@ -284,7 +284,7 @@ def _handle_zip(downloaded_file_path: Path, save_path: Path):
 
             def _extract_zip(zip_file: ZipFile, target_path: Path):
                 zip_file.extractall(target_path)
-                log.info(
+                logging.info(
                     "Zip file `%s` extracted to `%s`", zip_file.filename, target_path
                 )
 
@@ -303,7 +303,7 @@ def _handle_zip(downloaded_file_path: Path, save_path: Path):
                 extracted_folder = DOWNLOADS_TEMP_PATH / zip_contents[0]
                 shutil.copytree(extracted_folder, ROOT_SAVE_PATH, dirs_exist_ok=True)
 
-                log.info("`%s` moved to `%s`", extracted_folder, ROOT_SAVE_PATH)
+                logging.info("`%s` moved to `%s`", extracted_folder, ROOT_SAVE_PATH)
                 shutil.rmtree(extracted_folder)
             else:
                 _extract_zip(zip_ref, ROOT_SAVE_PATH)
@@ -379,7 +379,7 @@ def create_payload():
         if re.search(r"hekate_ctcaer_(?:\d+\.\d+\.\d+)\.bin", file.name) is not None:
             new_path = file.with_name("payload.bin")
             file.rename(new_path)
-            log.info("Renamed `%s` to `%s`", file, new_path)
+            logging.info("Renamed `%s` to `%s`", file, new_path)
             break
 
 
@@ -391,7 +391,7 @@ def remove_from_root(to_remove: List[str]):
                 shutil.rmtree(item)
             elif item.is_file():
                 item.unlink()
-            log.info("Removed `%s`", item)
+            logging.info("Removed `%s`", item)
 
 
 def move_nro_apps_into_folders() -> None:
@@ -409,12 +409,12 @@ def get_github_token() -> Optional[str]:
     if re.match(r"^ghp_[a-zA-Z0-9]{36}$", token):
         return token
 
-    log.info("Invalid GitHub token `%s`", token)
+    logging.info("Invalid GitHub token `%s`", token)
     return None
 
 
 def valid_log_level(level: str):
-    numeric_level = getattr(log, level.upper(), None)
+    numeric_level = getattr(logging, level.upper(), None)
     if not isinstance(numeric_level, int):
         raise ArgumentTypeError(f"Invalid log level: `{level}`")
     return level
@@ -426,7 +426,7 @@ def main() -> None:
         "--log",
         type=valid_log_level,
         default="ERROR",
-        help=f"Set the log level: {', '.join(log.getLevelNamesMapping().keys())} (default ERROR)",
+        help=f"Set the log level: {', '.join(logging.getLevelNamesMapping().keys())} (default ERROR)",
     )
     cli_parser.add_argument("--mariko", action="store_true", help="Enable mariko mode")
     cli_parser.add_argument(
@@ -438,7 +438,7 @@ def main() -> None:
     cli_parser.add_argument("--pack", help="Name of the zip file to create")
     cli_args = cli_parser.parse_args()
 
-    log.basicConfig(
+    logging.basicConfig(
         level=cli_args.log,
         format="[%(asctime)s %(levelname)s %(name)s] %(message)s",
     )
@@ -446,11 +446,11 @@ def main() -> None:
     if cli_args.rebuild:
         if ROOT_SAVE_PATH.exists():
             shutil.rmtree(ROOT_SAVE_PATH)
-            log.info("Removed `%s`", ROOT_SAVE_PATH)
+            logging.info("Removed `%s`", ROOT_SAVE_PATH)
 
         if DOWNLOADS_LOCK.exists():
             DOWNLOADS_LOCK.unlink()
-            log.info("Removed `%s`", DOWNLOADS_LOCK)
+            logging.info("Removed `%s`", DOWNLOADS_LOCK)
 
     downloads_section_list = parse_downloads_toml()
     downloads_lock_list = parse_downloads_lock()
@@ -470,11 +470,11 @@ def main() -> None:
     if not cli_args.no_config:
         if CONFIG_FILES_PATH.exists():
             shutil.copytree(CONFIG_FILES_PATH, ROOT_SAVE_PATH, dirs_exist_ok=True)
-            log.info("Copied `%s` to `%s`", CONFIG_FILES_PATH, ROOT_SAVE_PATH)
+            logging.info("Copied `%s` to `%s`", CONFIG_FILES_PATH, ROOT_SAVE_PATH)
 
     if cli_args.pack is not None:
         shutil.make_archive(cli_args.pack, "zip", ROOT_SAVE_PATH)
-        log.info(
+        logging.info(
             "The directory `%s` has been packed into `%s.zip`",
             ROOT_SAVE_PATH,
             cli_args.pack,
