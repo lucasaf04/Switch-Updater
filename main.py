@@ -3,7 +3,8 @@ import re
 import shutil
 from argparse import ArgumentParser, ArgumentTypeError
 from pathlib import Path
-from typing import List
+from typing import List, Optional
+from zipfile import ZipFile
 
 from Config import (
     BASE_PATH,
@@ -15,8 +16,61 @@ from Config import (
     parse_downloads_toml,
     save_downloads_lock,
 )
-from Downloader import download_all
-from Section import SectionId
+from Downloader import DOWNLOADS_TEMP_PATH, DownloaderLock
+from Section import Section, SectionId
+
+
+def _extract_zip(zip_file: ZipFile, target_path: Path):
+    zip_file.extractall(target_path)
+    logging.info("Zip file `%s` extracted to `%s`", zip_file.filename, target_path)
+
+
+def _handle_zip(downloaded_file_path: Path, save_path: Path) -> None:
+    try:
+        with ZipFile(downloaded_file_path, "r") as zip_ref:
+            zip_contents = zip_ref.namelist()
+            is_single_file_zip = all("/" not in item for item in zip_contents)
+            is_non_root_zip = any(
+                keyword.lower() in zip_contents[0].lower()
+                for keyword in ["sd/", "sdout/"]
+            )
+
+            if is_single_file_zip:
+                _extract_zip(zip_ref, save_path)
+            elif is_non_root_zip:
+                _extract_zip(zip_ref, DOWNLOADS_TEMP_PATH)
+
+                extracted_folder = DOWNLOADS_TEMP_PATH / zip_contents[0]
+                shutil.copytree(extracted_folder, ROOT_SAVE_PATH, dirs_exist_ok=True)
+
+                logging.info("`%s` moved to `%s`", extracted_folder, ROOT_SAVE_PATH)
+                shutil.rmtree(extracted_folder)
+            else:
+                _extract_zip(zip_ref, ROOT_SAVE_PATH)
+    except Exception as err:
+        raise RuntimeError(f"Error while extracting the zip file: {err}") from err
+
+
+def download_all(
+    section_list: List[Section], lock_list: List[DownloaderLock], token: Optional[str]
+) -> None:
+    ROOT_SAVE_PATH.mkdir(exist_ok=True)
+
+    for section in section_list:
+        print(f"Downloading {section.id.name.lower()}:")
+
+        for item in section.items:
+            downloaded_file_path = item.downloader.download(lock_list, token)
+            save_path = SAVE_PATHS[section.id]
+
+            if downloaded_file_path is not None:
+                if downloaded_file_path.suffix == ".zip":
+                    _handle_zip(downloaded_file_path, save_path)
+                else:
+                    save_path.mkdir(parents=True, exist_ok=True)
+                    downloaded_file_path.replace(save_path / downloaded_file_path.name)
+
+                remove_from_root(item.to_remove)
 
 
 def create_payload() -> None:

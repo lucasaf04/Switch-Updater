@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 import toml
 
 from Downloader import Downloader, DownloaderInitError, DownloaderLock
-from Section import Section, SectionId, SectionItem
+from Section import Section, SectionId, SectionItem, getSectionId
 
 BASE_PATH: Path = Path.cwd()
 DOWNLOADS_TOML: Path = BASE_PATH / "downloads.toml"
@@ -52,7 +52,7 @@ def parse_downloads_toml() -> List[Section]:
                 )
             )
 
-        section_list.append(Section(SectionId.parse(s_name), asset_list))
+        section_list.append(Section(getSectionId(s_name), asset_list))
 
     return section_list
 

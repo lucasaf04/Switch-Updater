@@ -5,12 +5,6 @@ from typing import List
 from Downloader import Downloader
 
 
-@dataclass
-class SectionItem:
-    downloader: Downloader
-    to_remove: List[str]
-
-
 class SectionId(Enum):
     BOOTLOADER = auto()
     FIRMWARE = auto()
@@ -20,24 +14,29 @@ class SectionId(Enum):
     OVERLAYS = auto()
     TEGRAEXPLORER_SCRIPTS = auto()
 
-    @staticmethod
-    def parse(section_name: str):
-        if section_name == "bootloader":
-            return SectionId.BOOTLOADER
-        if section_name == "firmware":
-            return SectionId.FIRMWARE
-        if section_name == "payloads":
-            return SectionId.PAYLOADS
-        if section_name == "nro_apps":
-            return SectionId.NRO_APPS
-        if section_name == "atmosphere_modules":
-            return SectionId.ATMOSPHERE_MODULES
-        if section_name == "overlays":
-            return SectionId.OVERLAYS
-        if section_name == "tegraexplorer_scripts":
-            return SectionId.TEGRAEXPLORER_SCRIPTS
 
+_nameToSectionId = {
+    "bootloader": SectionId.BOOTLOADER,
+    "firmware": SectionId.FIRMWARE,
+    "payloads": SectionId.PAYLOADS,
+    "nro_apps": SectionId.NRO_APPS,
+    "atmosphere_modules": SectionId.ATMOSPHERE_MODULES,
+    "overlays": SectionId.OVERLAYS,
+    "tegraexplorer_scripts": SectionId.TEGRAEXPLORER_SCRIPTS,
+}
+
+
+def getSectionId(section_name: str):
+    result = _nameToSectionId.get(section_name)
+    if result is None:
         raise RuntimeError(f"Unsupported section name: `{section_name}`")
+    return result
+
+
+@dataclass
+class SectionItem:
+    downloader: Downloader
+    to_remove: List[str]
 
 
 @dataclass
