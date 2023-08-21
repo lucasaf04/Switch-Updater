@@ -58,7 +58,7 @@ class Downloader:
             raise RuntimeError("`url` must be provided alone")
 
     @staticmethod
-    def _github_api_request(url: str, token: Optional[str]) -> Optional[Any]:
+    def _github_api_request(url: str, token: Optional[str]) -> Optional[Dict[str, Any]]:
         if token is not None:
             headers = {
                 "Accept": "application/vnd.github+json",
@@ -70,14 +70,14 @@ class Downloader:
 
         response = requests.get(url=url, headers=headers, timeout=5)
 
-        if response.status_code == 200:
-            return response.json()
+        if response.status_code != 200:
+            print(f"GitHub API Request failed. Status code: {response.status_code}")
+            return None
 
-        print(f"GitHub API Request failed. Status code: {response.status_code}")
-        return None
+        return response.json()
 
     @staticmethod
-    def _get_latest_release(repo: str, token: Optional[str]) -> Optional[Any]:
+    def _get_latest_release(repo: str, token: Optional[str]) -> Optional[Dict[str, Any]]:
         url = f"https://api.github.com/repos/{repo}/releases/latest"
         return Downloader._github_api_request(url, token)
 
@@ -86,26 +86,27 @@ class Downloader:
         url = f"https://api.github.com/repos/{repo}"
         response = Downloader._github_api_request(url, token)
 
-        if response is None:
-            return None
-
-        return response.get("default_branch")
+        return response.get("default_branch") if response is not None else None
 
     @staticmethod
     def _download_file_to_temp_dir(url: str) -> Optional[Path]:
+        filename = Path(url).name
         try:
-            file_path = DOWNLOADS_TEMP_PATH / Path(url).name
+            file_path = DOWNLOADS_TEMP_PATH / filename
             response = requests.get(url, timeout=5)
 
-            if response.status_code == 200:
-                with open(file_path, "wb") as file:
-                    file.write(response.content)
+            if response.status_code != 200:
+                print(
+                    f"Failed to download `{filename}`. Status code: {response.status_code}"
+                )
+                return None
+
+            with open(file_path, "wb") as file:
+                file.write(response.content)
                 return file_path
 
-            print(f"Failed to download the file. Status code: {response.status_code}")
-            return None
         except Exception as err:
-            raise RuntimeError(f"Error while downloading the file: {err}") from err
+            raise RuntimeError(f"Error while downloading `{filename}`: {err}") from err
 
     def _get_asset(self, assets: Any) -> Optional[Any]:
         for asset in assets:
@@ -137,14 +138,13 @@ class Downloader:
         self,
         lock_list: List[DownloaderLock],
         token: Optional[str],
-    ) -> Optional[Tuple[str, str, str]]:
+    ) -> Optional[Tuple[str, str]]:
         if self.repo is not None and self.file is not None:
             default_branch = Downloader._get_default_branch(self.repo, token)
 
             if default_branch is not None:
                 url = f"https://raw.githubusercontent.com/{self.repo}/{default_branch}/{self.file}"
-                filename = Path(self.file).name
-                message = f"\t{self.repo}: {filename}"
+                message = f"\t{self.repo}: {Path(self.file).name}"
             else:
                 print(f"Unable to get default branch for `{self.repo}`")
                 return None
@@ -182,12 +182,11 @@ class Downloader:
                 return None
         elif self.url is not None:
             url = self.url
-            filename = Path(url).name
-            message = f"\t{filename}"
+            message = f"\t{Path(url).name}"
         else:
             raise AssertionError("This branch should be unreachable.")
 
-        return (url, filename, message)
+        return (url, message)
 
     def download(
         self,
@@ -195,19 +194,19 @@ class Downloader:
         token: Optional[str],
     ) -> Optional[Path]:
         preparation = self._prepare_download(lock_list, token)
+        
         if preparation is None:
             return None
 
-        url, filename, message = preparation
+        url, message = preparation
         downloaded_file_path = Downloader._download_file_to_temp_dir(url)
 
-        if downloaded_file_path is not None:
-            print(message)
-            logging.info("File downloaded to `%s`", downloaded_file_path)
-            return downloaded_file_path
+        if downloaded_file_path is None:
+            return None
 
-        print(f"Failed to download `{filename}` from `{url}`")
-        return None
+        print(message)
+        logging.info("File downloaded to `%s`", downloaded_file_path)
+        return downloaded_file_path
 
 
 class DownloaderInitError(RuntimeError):
@@ -281,13 +280,6 @@ def download_all(
 def _handle_zip(downloaded_file_path: Path, save_path: Path) -> None:
     try:
         with ZipFile(downloaded_file_path, "r") as zip_ref:
-
-            def _extract_zip(zip_file: ZipFile, target_path: Path):
-                zip_file.extractall(target_path)
-                logging.info(
-                    "Zip file `%s` extracted to `%s`", zip_file.filename, target_path
-                )
-
             zip_contents = zip_ref.namelist()
             is_single_file_zip = all("/" not in item for item in zip_contents)
             is_non_root_zip = any(
@@ -309,6 +301,11 @@ def _handle_zip(downloaded_file_path: Path, save_path: Path) -> None:
                 _extract_zip(zip_ref, ROOT_SAVE_PATH)
     except Exception as err:
         raise RuntimeError(f"Error while extracting the zip file: {err}") from err
+
+
+def _extract_zip(zip_file: ZipFile, target_path: Path):
+    zip_file.extractall(target_path)
+    logging.info("Zip file `%s` extracted to `%s`", zip_file.filename, target_path)
 
 
 def parse_downloads_toml() -> List[Section]:
@@ -403,13 +400,13 @@ def move_nro_apps_into_folders() -> None:
 
 
 def get_github_token() -> Optional[str]:
-    with open(BASE_PATH / "github.token", "r", encoding="utf-8") as token_file:
+    with open(GITHUB_TOKEN, "r", encoding="utf-8") as token_file:
         token = token_file.read().strip()
 
     if re.match(r"^ghp_[a-zA-Z0-9]{36}$", token):
         return token
 
-    logging.info("Invalid GitHub token `%s`", token)
+    logging.warning("Invalid GitHub token `%s`", token)
     return None
 
 
@@ -499,5 +496,6 @@ if __name__ == "__main__":
         SectionId.TEGRAEXPLORER_SCRIPTS: ROOT_SAVE_PATH / "tegraexplorer/scripts",
     }
     CONFIG_FILES_PATH: Path = BASE_PATH / "config_files"
+    GITHUB_TOKEN = BASE_PATH / "github.token"
 
     main()
