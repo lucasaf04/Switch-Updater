@@ -278,7 +278,7 @@ def download_all(
                 remove_from_root(item.to_remove)
 
 
-def _handle_zip(downloaded_file_path: Path, save_path: Path):
+def _handle_zip(downloaded_file_path: Path, save_path: Path) -> None:
     try:
         with ZipFile(downloaded_file_path, "r") as zip_ref:
 
@@ -374,7 +374,7 @@ def save_downloads_lock(lock_list: List[DownloaderLock]) -> None:
         toml_file.write(toml_string)
 
 
-def create_payload():
+def create_payload() -> None:
     for file in ROOT_SAVE_PATH.iterdir():
         if re.search(r"hekate_ctcaer_(?:\d+\.\d+\.\d+)\.bin", file.name) is not None:
             new_path = file.with_name("payload.bin")
@@ -383,7 +383,7 @@ def create_payload():
             break
 
 
-def remove_from_root(to_remove: List[str]):
+def remove_from_root(to_remove: List[str]) -> None:
     for item in to_remove:
         item = ROOT_SAVE_PATH / item
         if item.exists():
@@ -413,7 +413,7 @@ def get_github_token() -> Optional[str]:
     return None
 
 
-def valid_log_level(level: str):
+def valid_log_level(level: str) -> str:
     numeric_level = getattr(logging, level.upper(), None)
     if not isinstance(numeric_level, int):
         raise ArgumentTypeError(f"Invalid log level: `{level}`")
