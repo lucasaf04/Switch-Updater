@@ -9,7 +9,7 @@
             "type": "python",
             "request": "launch",
             "program": "src/main.py",
-            "args": ["--debug", "--mariko", "--pack=DEBUG"],
+            "args": ["--log=DEBUG", "--mariko", "--pack=DEBUG"],
             "console": "integratedTerminal",
             "justMyCode": true
         }
