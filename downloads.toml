@@ -13,7 +13,7 @@ tegra-explorer = { repo = "suchmememanyskill/TegraExplorer", asset_name = "Tegra
 
 [nro_apps]
 appstore = { repo = "fortheusers/hb-appstore", asset_name = "appstore.nro" }
-breeze = { repo = "tomvita/Breeze-Beta", asset_name = "Breeze.zip", remove = ["switch/reboot_to_hekate.nro"] }
+breeze = { repo = "tomvita/Breeze-Beta", asset_name = "Breeze.zip", remove = ["switch/reboot_to_hekate.nro", "switch/breeze/.Breeze.nro.star"] }
 dbi = { repo = "rashevskyv/dbi", asset_name = "DBI.nro" }
 edizon = { repo = "tomvita/EdiZon-SE", asset_name = "EdiZon.zip", remove = ["atmosphere", "switch/breeze"] }
 ftpd = { repo = "mtheall/ftpd", asset_name = "ftpd.nro" }
