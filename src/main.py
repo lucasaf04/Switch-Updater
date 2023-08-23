@@ -6,26 +6,29 @@ from pathlib import Path
 from typing import List, Optional
 from zipfile import ZipFile
 
-from Config import (
+from Config import get_github_token, parse_downloads_toml
+from Downloader import DownloadError
+from DownloaderLock import DownloaderLock, parse_downloads_lock, save_downloads_lock
+from Paths import (
     BASE_PATH,
+    DOWNLOADS_CACHE_PATH,
     DOWNLOADS_LOCK,
+    DOWNLOADS_TEMP_PATH,
     ROOT_SAVE_PATH,
     SAVE_PATHS,
-    get_github_token,
-    parse_downloads_lock,
-    parse_downloads_toml,
-    save_downloads_lock,
 )
-from Downloader import DOWNLOADS_TEMP_PATH, DownloaderLock
-from Section import Section, SectionId
+from Section import Section
+from SectionId import SectionId
 
 
-def _extract_zip(zip_file: ZipFile, target_path: Path):
-    zip_file.extractall(target_path)
+def _extract_zip(zip_file: ZipFile, members: Optional[List[str]], target_path: Path):
+    zip_file.extractall(target_path, members)
     logging.info("Zip file `%s` extracted to `%s`", zip_file.filename, target_path)
 
 
-def _handle_zip(downloaded_file_path: Path, save_path: Path) -> None:
+def _handle_zip(
+    downloaded_file_path: Path, save_path: Path, to_remove: List[str]
+) -> None:
     try:
         with ZipFile(downloaded_file_path, "r") as zip_ref:
             zip_contents = zip_ref.namelist()
@@ -34,11 +37,19 @@ def _handle_zip(downloaded_file_path: Path, save_path: Path) -> None:
                 keyword.lower() in zip_contents[0].lower()
                 for keyword in ["sd/", "sdout/"]
             )
+            filtered_zip_contents = None
+
+            if len(to_remove) > 0:
+                filtered_zip_contents = [
+                    filename
+                    for filename in zip_contents
+                    if not any(filename.startswith(prefix) for prefix in to_remove)
+                ]
 
             if is_single_file_zip:
-                _extract_zip(zip_ref, save_path)
+                _extract_zip(zip_ref, filtered_zip_contents, save_path)
             elif is_non_root_zip:
-                _extract_zip(zip_ref, DOWNLOADS_TEMP_PATH)
+                _extract_zip(zip_ref, filtered_zip_contents, DOWNLOADS_TEMP_PATH)
 
                 extracted_folder = DOWNLOADS_TEMP_PATH / zip_contents[0]
                 shutil.copytree(extracted_folder, ROOT_SAVE_PATH, dirs_exist_ok=True)
@@ -46,7 +57,7 @@ def _handle_zip(downloaded_file_path: Path, save_path: Path) -> None:
                 logging.info("`%s` moved to `%s`", extracted_folder, ROOT_SAVE_PATH)
                 shutil.rmtree(extracted_folder)
             else:
-                _extract_zip(zip_ref, ROOT_SAVE_PATH)
+                _extract_zip(zip_ref, filtered_zip_contents, ROOT_SAVE_PATH)
     except Exception as err:
         raise RuntimeError(f"Error while extracting the zip file: {err}") from err
 
@@ -54,23 +65,28 @@ def _handle_zip(downloaded_file_path: Path, save_path: Path) -> None:
 def download_all(
     section_list: List[Section], lock_list: List[DownloaderLock], token: Optional[str]
 ) -> None:
-    ROOT_SAVE_PATH.mkdir(exist_ok=True)
-
     for section in section_list:
         print(f"Downloading {section.id.name.lower()}:")
 
         for item in section.items:
-            downloaded_file_path = item.downloader.download(lock_list, token)
+            try:
+                downloaded_file_path = item.downloader.download(lock_list, token)
+            except DownloadError as err:
+                save_downloads_lock(lock_list)
+                raise err
+
             save_path = SAVE_PATHS[section.id]
 
             if downloaded_file_path is not None:
                 if downloaded_file_path.suffix == ".zip":
-                    _handle_zip(downloaded_file_path, save_path)
+                    _handle_zip(downloaded_file_path, save_path, item.to_remove)
                 else:
                     save_path.mkdir(parents=True, exist_ok=True)
-                    downloaded_file_path.replace(save_path / downloaded_file_path.name)
-
-                remove_from_root(item.to_remove)
+                    target_file_path = save_path / downloaded_file_path.name
+                    shutil.copyfile(downloaded_file_path, target_file_path)
+                    logging.info(
+                        "Copied`%s` to `%s`", downloaded_file_path, target_file_path
+                    )
 
 
 def create_payload() -> None:
@@ -123,7 +139,7 @@ def main() -> None:
         "--no-config", action="store_true", help="Disable copying config files"
     )
     cli_parser.add_argument(
-        "--rebuild", action="store_true", help="Delete previously downloaded files"
+        "--remove-cache", action="store_true", help="Delete previously downloaded files"
     )
     cli_parser.add_argument("--pack", help="Name of the zip file to create")
     cli_args = cli_parser.parse_args()
@@ -133,14 +149,23 @@ def main() -> None:
         format="[%(asctime)s %(levelname)s %(name)s] %(message)s",
     )
 
-    if cli_args.rebuild:
-        if ROOT_SAVE_PATH.exists():
-            shutil.rmtree(ROOT_SAVE_PATH)
-            logging.info("Removed `%s`", ROOT_SAVE_PATH)
+    if ROOT_SAVE_PATH.exists():
+        shutil.rmtree(ROOT_SAVE_PATH)
+        logging.info("Removed `%s`", ROOT_SAVE_PATH)
 
+    ROOT_SAVE_PATH.mkdir()
+    logging.info("Created `%s`", ROOT_SAVE_PATH)
+
+    if cli_args.remove_cache:
         if DOWNLOADS_LOCK.exists():
             DOWNLOADS_LOCK.unlink()
             logging.info("Removed `%s`", DOWNLOADS_LOCK)
+        if DOWNLOADS_CACHE_PATH.exists():
+            shutil.rmtree(DOWNLOADS_CACHE_PATH)
+            logging.info("Removed `%s`", DOWNLOADS_CACHE_PATH)
+
+    DOWNLOADS_CACHE_PATH.mkdir(exist_ok=True)
+    logging.info("Created `%s`", DOWNLOADS_CACHE_PATH)
 
     downloads_section_list = parse_downloads_toml()
     downloads_lock_list = parse_downloads_lock()

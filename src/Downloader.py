@@ -1,29 +1,24 @@
 import logging
 import re
-import tempfile
+import urllib.parse
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Union
 
 import requests
 
-DOWNLOADS_TEMP_PATH: Path = Path(tempfile.mkdtemp())
+from DownloaderLock import DownloaderLock
+from Paths import DOWNLOADS_TEMP_PATH
 
 
-@dataclass
-class DownloaderLock:
-    repo: str
-    tag_name: str
-    asset_name: str
-    asset_updated_at: str
+class DownloadError(RuntimeError):
+    def __init__(self, filename: str, orig_error: requests.exceptions.RequestException):
+        super().__init__(f"Error while downloading `{filename}`: {orig_error}")
 
-    def __eq__(self, rhs: "DownloaderLock") -> bool:
-        return (
-            self.repo == rhs.repo
-            and self.tag_name == rhs.tag_name
-            and self.asset_name == rhs.asset_name
-            and self.asset_updated_at == rhs.asset_updated_at
-        )
+
+class DownloaderInitError(RuntimeError):
+    def __init__(self, message: str, table_name: str):
+        super().__init__(f"{message} in table `{table_name}`")
 
 
 def _github_api_request(url: str, token: Optional[str]) -> Optional[Dict[str, Any]]:
@@ -56,63 +51,70 @@ def _get_default_branch(repo: str, token: Optional[str]) -> Optional[str]:
     return response.get("default_branch") if response is not None else None
 
 
-def _download_file_to_temp_dir(url: str) -> Optional[Path]:
-    filename = Path(url).name
-    try:
-        file_path = DOWNLOADS_TEMP_PATH / filename
-        response = requests.get(url, timeout=5)
+def _download_file_to(target_path: Path, url: str) -> Optional[Path]:
+    filename = urllib.parse.unquote(Path(url).name)
 
-        if response.status_code != 200:
-            print(
-                f"Failed to download `{filename}`. Status code: {response.status_code}"
-            )
+    try:
+        response = requests.get(url, timeout=10)
+    except requests.exceptions.RequestException as err:
+        raise DownloadError(filename, err) from None
+
+    if response.status_code != 200:
+        print(f"Failed to download `{filename}`. Status code: {response.status_code}")
+        return None
+
+    target_path.mkdir(parents=True, exist_ok=True)
+
+    file_path = target_path / filename
+    with open(file_path, "wb") as file:
+        file.write(response.content)
+        return file_path
+
+
+class GithubFile:
+    def __init__(self, repo: str, file: str):
+        self._repo = repo
+        self._file = file
+
+    def download(
+        self,
+        token: Optional[str],
+    ) -> Optional[Path]:
+        print(f"\t{self._repo}: {Path(self._file).name}")
+
+        default_branch = _get_default_branch(self._repo, token)
+
+        if default_branch is None:
+            print(f"Unable to get default branch for `{self._repo}`")
             return None
 
-        with open(file_path, "wb") as file:
-            file.write(response.content)
-            return file_path
+        url = f"https://raw.githubusercontent.com/{self._repo}/{default_branch}/{self._file}"
+        downloaded_file_path = _download_file_to(DOWNLOADS_TEMP_PATH, url)
 
-    except Exception as err:
-        raise RuntimeError(f"Error while downloading `{filename}`: {err}") from err
+        if downloaded_file_path is not None:
+            logging.info("File downloaded to `%s`", downloaded_file_path)
+
+        return downloaded_file_path
 
 
 @dataclass
-class Downloader:
-    repo: Optional[str]
-    asset_name: Optional[str]
-    asset_regex: Optional[str]
-    file: Optional[str]
-    url: Optional[str]
-
-    def __post_init__(self):
-        if (self.repo is None) == (self.url is None):
-            raise RuntimeError("Either `repo` or `url` must be provided")
-
-        if (self.repo is not None) and (
-            (self.asset_name is None)
-            == (self.asset_regex is None)
-            == (self.file is None)
-        ):
-            raise RuntimeError(
-                "Either `asset_name`, `asset_regex` or `file` must be provided"
-            )
-
-        if (self.url is not None) and (
-            self.asset_name is not None
-            or self.asset_regex is not None
-            or self.file is not None
-        ):
-            raise RuntimeError("`url` must be provided alone")
+class GithubAsset:
+    def __init__(
+        self, repo: str, asset_name: Optional[str], asset_regex: Optional[str]
+    ):
+        self._repo = repo
+        self._asset_name = asset_name
+        self._asset_regex = asset_regex
 
     def _get_asset(self, assets: Any) -> Optional[Any]:
         for asset in assets:
             asset_name: str = asset["name"]
 
-            if self.asset_name is not None:
-                if asset_name == self.asset_name:
+            if self._asset_name is not None:
+                if asset_name == self._asset_name:
                     return asset
-            elif self.asset_regex is not None:
-                if re.search(self.asset_regex, asset_name) is not None:
+            elif self._asset_regex is not None:
+                if re.search(self._asset_regex, asset_name) is not None:
                     return asset
 
         return None
@@ -121,90 +123,135 @@ class Downloader:
         self, lock_list: List[DownloaderLock]
     ) -> Optional[DownloaderLock]:
         for lock in lock_list:
-            if lock.repo == self.repo:
-                if self.asset_name is not None:
-                    if lock.asset_name == self.asset_name:
+            if lock.repo == self._repo:
+                if self._asset_name is not None:
+                    if lock.asset_name == self._asset_name:
                         return lock
-                elif self.asset_regex is not None:
-                    if re.search(self.asset_regex, lock.asset_name) is not None:
+                elif self._asset_regex is not None:
+                    if re.search(self._asset_regex, lock.asset_name) is not None:
                         return lock
         return None
-
-    def _prepare_download(
-        self,
-        lock_list: List[DownloaderLock],
-        token: Optional[str],
-    ) -> Optional[Tuple[str, str]]:
-        if self.repo is not None and self.file is not None:
-            default_branch = _get_default_branch(self.repo, token)
-
-            if default_branch is not None:
-                url = f"https://raw.githubusercontent.com/{self.repo}/{default_branch}/{self.file}"
-                message = f"\t{self.repo}: {Path(self.file).name}"
-            else:
-                print(f"Unable to get default branch for `{self.repo}`")
-                return None
-        elif self.repo is not None:
-            latest_release = _get_latest_release(self.repo, token)
-
-            if latest_release is not None:
-                asset = self._get_asset(latest_release["assets"])
-
-                if asset is not None:
-                    filename = asset["name"]
-                    url = asset["browser_download_url"]
-                    message = f"\t{self.repo}: {filename}"
-
-                    cached_lock = self._get_cached_lock(lock_list)
-                    current_lock = DownloaderLock(
-                        repo=self.repo,
-                        tag_name=latest_release["tag_name"],
-                        asset_name=filename,
-                        asset_updated_at=asset["updated_at"],
-                    )
-
-                    if cached_lock is not None:
-                        if cached_lock == current_lock:
-                            print(f"\t{self.repo}: Already up to date")
-                            return None
-                        lock_list.remove(cached_lock)
-
-                    lock_list.append(current_lock)
-                else:
-                    print(f"Unable to get matching asset for `{self.repo}`")
-                    return None
-            else:
-                print(f"Unable to get latest release for `{self.repo}`")
-                return None
-        elif self.url is not None:
-            url = self.url
-            message = f"\t{Path(url).name}"
-        else:
-            raise AssertionError("This branch should be unreachable.")
-
-        return (url, message)
 
     def download(
         self,
         lock_list: List[DownloaderLock],
         token: Optional[str],
     ) -> Optional[Path]:
-        preparation = self._prepare_download(lock_list, token)
+        latest_release = _get_latest_release(self._repo, token)
 
-        if preparation is None:
+        if latest_release is None:
+            print(f"Unable to get latest release for `{self._repo}`")
             return None
 
-        url, message = preparation
-        downloaded_file_path = _download_file_to_temp_dir(url)
+        asset = self._get_asset(latest_release["assets"])
 
-        if downloaded_file_path is None:
+        if asset is None:
+            print(f"Unable to get matching asset for `{self._repo}`")
             return None
 
-        print(message)
-        logging.info("File downloaded to `%s`", downloaded_file_path)
+        asset_name = asset["name"]
+        current_lock = DownloaderLock(
+            self._repo,
+            latest_release["tag_name"],
+            asset_name,
+            asset["updated_at"],
+        )
+        cached_lock = self._get_cached_lock(lock_list)
+
+        if cached_lock is not None:
+            cached_asset_path = cached_lock.cached_asset_path()
+
+            if cached_lock == current_lock:
+                print(f"\t{self._repo}: Already up to date")
+                return cached_asset_path
+
+            cached_asset_path.unlink()
+            logging.info("Removed `%s`", cached_asset_path)
+
+            lock_list.remove(cached_lock)
+
+        print(f"\t{self._repo}: {asset_name}")
+
+        url = asset["browser_download_url"]
+
+        downloaded_file_path = _download_file_to(
+            current_lock.cached_asset_path().parent, url
+        )
+
+        if downloaded_file_path is not None:
+            logging.info("File downloaded to `%s`", downloaded_file_path)
+            lock_list.append(current_lock)
+
         return downloaded_file_path
 
 
-class DownloaderInitError(RuntimeError):
-    def __init__(self, message, table_name):
-        super().__init__(f"{message} in table `{table_name}`")
+class RawUrl:
+    def __init__(self, url: str):
+        self._url = url
+
+    def download(
+        self,
+    ) -> Optional[Path]:
+        print(f"\t{Path(self._url).name}")
+
+        downloaded_file_path = _download_file_to(DOWNLOADS_TEMP_PATH, self._url)
+
+        if downloaded_file_path is not None:
+            logging.info("File downloaded to `%s`", downloaded_file_path)
+
+        return downloaded_file_path
+
+
+class Downloader:
+    def __init__(self, downloader_type: Union[GithubFile, GithubAsset, RawUrl]):
+        self._downloader_type = downloader_type
+
+    def download(
+        self,
+        lock_list: List[DownloaderLock],
+        token: Optional[str],
+    ) -> Optional[Path]:
+        if isinstance(self._downloader_type, GithubAsset):
+            downloaded_file_path = self._downloader_type.download(lock_list, token)
+        elif isinstance(self._downloader_type, GithubFile):
+            downloaded_file_path = self._downloader_type.download(token)
+        elif isinstance(self._downloader_type, RawUrl):
+            downloaded_file_path = self._downloader_type.download()
+        else:
+            raise AssertionError("This branch should be unreachable.")
+
+        return downloaded_file_path
+
+
+def createDownloader(
+    repo: Optional[str],
+    asset_name: Optional[str],
+    asset_regex: Optional[str],
+    file: Optional[str],
+    url: Optional[str],
+) -> Downloader:
+    if (repo is None) == (url is None):
+        raise RuntimeError("Either `repo` or `url` must be provided")
+
+    if (repo is not None) and (
+        (asset_name is None) == (asset_regex is None) == (file is None)
+    ):
+        raise RuntimeError(
+            "Either `asset_name`, `asset_regex` or `file` must be provided"
+        )
+
+    if (url is not None) and (
+        asset_name is not None or asset_regex is not None or file is not None
+    ):
+        raise RuntimeError("`url` must be provided alone")
+
+    if repo and (asset_name or asset_regex):
+        return Downloader(GithubAsset(repo, asset_name, asset_regex))
+
+    if repo and file:
+        return Downloader(GithubFile(repo, file))
+
+    if url:
+        return Downloader(RawUrl(url))
+
+    raise AssertionError("This branch should be unreachable.")
