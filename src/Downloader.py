@@ -55,7 +55,7 @@ def _download_file_to(target_path: Path, url: str) -> Optional[Path]:
     filename = urllib.parse.unquote(Path(url).name)
 
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, timeout=10, headers={'cache-control': 'no-cache'})
     except requests.exceptions.RequestException as err:
         raise DownloadError(filename, err) from None
 
