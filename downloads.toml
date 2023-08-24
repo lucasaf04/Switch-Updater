@@ -8,7 +8,7 @@ sigpatches = { url = "https://sigmapatches.coomer.party/sigpatches.zip" }
 [payloads]
 fusee = { repo = "Atmosphere-NX/Atmosphere", asset_name = "fusee.bin" }
 # lockpick-rcm = { repo = "shchmue/Lockpick_RCM", asset_name = "", asset_regex = "" }
-lockpick-rcm = { url = "https://web.archive.org/web/20230508014140mp_/https://github.com/shchmue/Lockpick_RCM/releases/download/v1.9.10/Lockpick_RCM.bin" }
+lockpick-rcm = { url = "https://web.archive.org/web/20230506035121/https://github.com/shchmue/Lockpick_RCM/releases/download/v1.9.10/Lockpick_RCM.bin" }
 tegra-explorer = { repo = "suchmememanyskill/TegraExplorer", asset_name = "TegraExplorer.bin" }
 
 [nro_apps]
