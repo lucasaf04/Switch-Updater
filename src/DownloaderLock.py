@@ -15,14 +15,6 @@ class DownloaderLock:
     asset_name: str
     asset_updated_at: str
 
-    def __eq__(self, rhs: "DownloaderLock") -> bool:
-        return (
-            self.repo == rhs.repo
-            and self.tag_name == rhs.tag_name
-            and self.asset_name == rhs.asset_name
-            and self.asset_updated_at == rhs.asset_updated_at
-        )
-
     def cached_asset_path(self) -> Path:
         identifier_data = (
             f"{self.asset_updated_at} {Path(self.asset_name).name}".encode("utf-8")
