@@ -49,5 +49,3 @@ options:
 ```
 
 ## Todo
-
-- [ ] Erista mode (default behavior, no `--mariko` flag)

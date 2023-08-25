@@ -3,7 +3,7 @@ import re
 import shutil
 from argparse import ArgumentParser, ArgumentTypeError
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 from zipfile import ZipFile
 
 from Config import get_github_token, parse_downloads_toml
@@ -14,6 +14,7 @@ from Paths import (
     DOWNLOADS_CACHE_PATH,
     DOWNLOADS_LOCK,
     DOWNLOADS_TEMP_PATH,
+    PC_SAVE_PATH,
     ROOT_SAVE_PATH,
     SAVE_PATHS,
 )
@@ -89,10 +90,17 @@ def download_all(
                     )
 
 
-def create_root_payload() -> None:
-    for file in ROOT_SAVE_PATH.iterdir():
-        if re.search(r"hekate_ctcaer_(?:\d+\.\d+\.\d+)\.bin", file.name) is not None:
-            new_path = file.with_name("payload.bin")
+def move_file(
+    source_path: Path,
+    source_pattern: Union[str, re.Pattern[str]],
+    target_path: Path,
+    target_name: Optional[str] = None,
+) -> None:
+    for file in source_path.iterdir():
+        if re.search(source_pattern, file.name) is not None:
+            new_path = target_path / (
+                target_name if target_name is not None else file.name
+            )
             file.rename(new_path)
             logging.info("Renamed `%s` to `%s`", file, new_path)
             break
@@ -110,7 +118,11 @@ def remove_from_root(to_remove: List[str]) -> None:
 
 
 def move_nro_apps_into_folders() -> None:
-    for item in SAVE_PATHS[SectionId.NRO_APPS].iterdir():
+    nro_apps_path = SAVE_PATHS[SectionId.NRO_APPS]
+    if nro_apps_path is None:
+        return None
+
+    for item in nro_apps_path.iterdir():
         if item.is_file() and item.suffix == ".nro":
             folder = item.parent / item.stem
             folder.mkdir(exist_ok=True)
@@ -178,11 +190,19 @@ def main() -> None:
     save_downloads_lock(downloads_lock_list)
 
     if cli_args.mariko:
-        create_root_payload()
+        move_file(
+            ROOT_SAVE_PATH,
+            r"hekate_ctcaer_(?:\d+\.\d+\.\d+)\.bin",
+            ROOT_SAVE_PATH,
+            "payload.bin",
+        )
         remove_from_root(["switch/reboot_to_payload.nro"])
     else:
-        # todo
-        print("Erista specific functionality not implemented")
+        pc_payloads_path = PC_SAVE_PATH / "payloads"
+        pc_payloads_path.mkdir(exist_ok=True)
+        move_file(
+            ROOT_SAVE_PATH, r"hekate_ctcaer_(?:\d+\.\d+\.\d+)\.bin", pc_payloads_path
+        )
 
     move_nro_apps_into_folders()
 

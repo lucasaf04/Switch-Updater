@@ -20,3 +20,4 @@ SAVE_PATHS: Dict[SectionId, Path] = {
     SectionId.OVERLAYS: ROOT_SAVE_PATH / "switch/.overlays",
     SectionId.TEGRAEXPLORER_SCRIPTS: ROOT_SAVE_PATH / "tegraexplorer/scripts",
 }
+PC_SAVE_PATH: Path = BASE_PATH / "pc"
