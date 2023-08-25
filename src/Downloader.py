@@ -55,7 +55,7 @@ def _download_file_to(target_path: Path, url: str) -> Optional[Path]:
     filename = urllib.parse.unquote(Path(url).name)
 
     try:
-        response = requests.get(url, timeout=10, headers={'cache-control': 'no-cache'})
+        response = requests.get(url, timeout=10, headers={"cache-control": "no-cache"})
     except requests.exceptions.RequestException as err:
         raise DownloadError(filename, err) from None
 
@@ -71,10 +71,10 @@ def _download_file_to(target_path: Path, url: str) -> Optional[Path]:
         return file_path
 
 
+@dataclass(frozen=True)
 class GithubFile:
-    def __init__(self, repo: str, file: str):
-        self._repo = repo
-        self._file = file
+    _repo: str
+    _file: str
 
     def download(
         self,
@@ -97,14 +97,11 @@ class GithubFile:
         return downloaded_file_path
 
 
-@dataclass
+@dataclass(frozen=True)
 class GithubAsset:
-    def __init__(
-        self, repo: str, asset_name: Optional[str], asset_regex: Optional[str]
-    ):
-        self._repo = repo
-        self._asset_name = asset_name
-        self._asset_regex = asset_regex
+    _repo: str
+    _asset_name: Optional[str]
+    _asset_regex: Optional[str]
 
     def _get_asset(self, assets: Any) -> Optional[Any]:
         for asset in assets:
@@ -185,9 +182,9 @@ class GithubAsset:
         return downloaded_file_path
 
 
+@dataclass(frozen=True)
 class RawUrl:
-    def __init__(self, url: str):
-        self._url = url
+    _url: str
 
     def download(
         self,
@@ -202,9 +199,9 @@ class RawUrl:
         return downloaded_file_path
 
 
+@dataclass(frozen=True)
 class Downloader:
-    def __init__(self, downloader_type: Union[GithubFile, GithubAsset, RawUrl]):
-        self._downloader_type = downloader_type
+    _downloader_type: Union[GithubFile, GithubAsset, RawUrl]
 
     def download(
         self,

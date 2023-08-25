@@ -8,7 +8,7 @@ import toml
 from Paths import DOWNLOADS_CACHE_PATH, DOWNLOADS_LOCK
 
 
-@dataclass
+@dataclass(frozen=True)
 class DownloaderLock:
     repo: str
     tag_name: str

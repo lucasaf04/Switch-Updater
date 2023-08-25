@@ -5,13 +5,13 @@ from Downloader import Downloader
 from SectionId import SectionId
 
 
-@dataclass
+@dataclass(frozen=True)
 class SectionItem:
     downloader: Downloader
     to_remove: List[str]
 
 
-@dataclass
+@dataclass(frozen=True)
 class Section:
     id: SectionId
     items: List[SectionItem]
