@@ -1,5 +1,6 @@
 import logging
 import re
+import shutil
 import urllib.parse
 from dataclasses import dataclass
 from pathlib import Path
@@ -162,8 +163,8 @@ class GithubAsset:
                 print(f"\t{self._repo}: Already up to date")
                 return cached_asset_path
 
-            cached_asset_path.unlink()
-            logging.info("Removed `%s`", cached_asset_path)
+            shutil.rmtree(cached_asset_path.parent)
+            logging.info("Removed `%s`", cached_asset_path.parent)
 
             lock_list.remove(cached_lock)
 
