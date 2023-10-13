@@ -19,7 +19,7 @@ class DownloadError(RuntimeError):
 
 class DownloaderInitError(RuntimeError):
     def __init__(self, message: str, table_name: str):
-        super().__init__(f"{message} in table `{table_name}`")
+        super().__init__(f"{message} in table array `{table_name}`")
 
 
 def _github_api_request(url: str, token: Optional[str]) -> Optional[Dict[str, Any]]:

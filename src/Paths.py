@@ -14,10 +14,10 @@ ROOT_SAVE_PATH: Path = BASE_PATH / "sd"
 SAVE_PATHS: Dict[SectionId, Path] = {
     SectionId.BOOTLOADER: ROOT_SAVE_PATH,
     SectionId.FIRMWARE: ROOT_SAVE_PATH,
-    SectionId.PAYLOADS: ROOT_SAVE_PATH / "bootloader/payloads",
-    SectionId.NRO_APPS: ROOT_SAVE_PATH / "switch",
-    SectionId.ATMOSPHERE_MODULES: ROOT_SAVE_PATH / "atmosphere/contents",
-    SectionId.OVERLAYS: ROOT_SAVE_PATH / "switch/.overlays",
-    SectionId.TEGRAEXPLORER_SCRIPTS: ROOT_SAVE_PATH / "tegraexplorer/scripts",
+    SectionId.PAYLOAD: ROOT_SAVE_PATH / "bootloader/payloads",
+    SectionId.NRO_APP: ROOT_SAVE_PATH / "switch",
+    SectionId.ATMOSPHERE_MODULE: ROOT_SAVE_PATH / "atmosphere/contents",
+    SectionId.OVERLAY: ROOT_SAVE_PATH / "switch/.overlays",
+    SectionId.TEGRAEXPLORER_SCRIPT: ROOT_SAVE_PATH / "tegraexplorer/scripts",
 }
 PC_SAVE_PATH: Path = BASE_PATH / "pc"

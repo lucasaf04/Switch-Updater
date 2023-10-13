@@ -4,21 +4,21 @@ from enum import Enum, auto
 class SectionId(Enum):
     BOOTLOADER = auto()
     FIRMWARE = auto()
-    PAYLOADS = auto()
-    NRO_APPS = auto()
-    ATMOSPHERE_MODULES = auto()
-    OVERLAYS = auto()
-    TEGRAEXPLORER_SCRIPTS = auto()
+    PAYLOAD = auto()
+    NRO_APP = auto()
+    ATMOSPHERE_MODULE = auto()
+    OVERLAY = auto()
+    TEGRAEXPLORER_SCRIPT = auto()
 
 
 _nameToSectionId = {
     "bootloader": SectionId.BOOTLOADER,
     "firmware": SectionId.FIRMWARE,
-    "payloads": SectionId.PAYLOADS,
-    "nro_apps": SectionId.NRO_APPS,
-    "atmosphere_modules": SectionId.ATMOSPHERE_MODULES,
-    "overlays": SectionId.OVERLAYS,
-    "tegraexplorer_scripts": SectionId.TEGRAEXPLORER_SCRIPTS,
+    "payload": SectionId.PAYLOAD,
+    "nro_app": SectionId.NRO_APP,
+    "atmosphere_module": SectionId.ATMOSPHERE_MODULE,
+    "overlay": SectionId.OVERLAY,
+    "tegraexplorer_script": SectionId.TEGRAEXPLORER_SCRIPT,
 }
 
 

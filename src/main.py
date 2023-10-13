@@ -118,7 +118,7 @@ def remove_from_root(to_remove: List[str]) -> None:
 
 
 def move_nro_apps_into_folders() -> None:
-    nro_apps_path = SAVE_PATHS[SectionId.NRO_APPS]
+    nro_apps_path = SAVE_PATHS[SectionId.NRO_APP]
     if nro_apps_path is None:
         return None
 

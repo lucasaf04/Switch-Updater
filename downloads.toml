@@ -1,49 +1,162 @@
-[bootloader]
-hekate = { repo = "CTCaer/hekate", asset_regex = "hekate_ctcaer_(?:\\d+\\.\\d+\\.\\d+)_Nyx_(?:\\d+\\.\\d+\\.\\d+)(?:_v\\d)?\\.zip" }
+[[bootloader]]
+repo = "CTCaer/hekate"
+asset_regex = "hekate_ctcaer_(?:\\d+\\.\\d+\\.\\d+)_Nyx_(?:\\d+\\.\\d+\\.\\d+)(?:_v\\d)?\\.zip"
 
-[firmware]
-atmosphere = { repo = "Atmosphere-NX/Atmosphere", asset_regex = "atmosphere-(?:\\d+\\.\\d+\\.\\d+)-master-(?:\\w+)\\+hbl-(?:\\d+\\.\\d+\\.\\d+)\\+hbmenu-(?:\\d+\\.\\d+\\.\\d+)\\.zip" }
-sigpatches = { url = "https://sigmapatches.coomer.party/sigpatches.zip" }
+# --------------------
 
-[payloads]
-fusee = { repo = "Atmosphere-NX/Atmosphere", asset_name = "fusee.bin" }
-# lockpick-rcm = { repo = "shchmue/Lockpick_RCM", asset_name = "", asset_regex = "" }
-lockpick-rcm = { url = "https://web.archive.org/web/20230506035121/https://github.com/shchmue/Lockpick_RCM/releases/download/v1.9.10/Lockpick_RCM.bin" }
-tegra-explorer = { repo = "suchmememanyskill/TegraExplorer", asset_name = "TegraExplorer.bin" }
+[[firmware]]
+repo = "Atmosphere-NX/Atmosphere"
+asset_regex = "atmosphere-(?:\\d+\\.\\d+\\.\\d+)-master-(?:\\w+)\\+hbl-(?:\\d+\\.\\d+\\.\\d+)\\+hbmenu-(?:\\d+\\.\\d+\\.\\d+)\\.zip"
 
-[nro_apps]
-appstore = { repo = "fortheusers/hb-appstore", asset_name = "appstore.nro" }
-breeze = { repo = "tomvita/Breeze-Beta", asset_name = "Breeze.zip", remove = ["switch/reboot_to_hekate.nro", "switch/breeze/.Breeze.nro.star"] }
-dbi = { repo = "rashevskyv/dbi", asset_name = "DBI.nro" }
-edizon = { repo = "tomvita/EdiZon-SE", asset_name = "EdiZon.zip", remove = ["atmosphere", "switch/breeze"] }
-ftpd = { repo = "mtheall/ftpd", asset_name = "ftpd.nro" }
-jksv = { repo = "J-D-K/JKSV", asset_name = "JKSV.nro" }
-linkalho = { repo = "rdmrocha/linkalho", asset_regex = "linkalho-v(?:\\d+\\.\\d+\\.\\d+)\\.zip" }
-# lithium = { url = "https://tinfoil.media/repo/Lithium%20%5B16.0%5D%5Bv2%5D.zip" }
-nx-shell = { repo = "joel16/NX-Shell", asset_name = "NX-Shell.nro" }
-# nxdt-rw-poc = { repo = "", asset_name = "", asset_regex = "" } # Unreleased (GitHub Actions)
-nx-dump-tool = { repo = "DarkMatterCore/nxdumptool", asset_name = "nxdumptool.nro" }
-nx-themes-installer = { repo = "exelix11/SwitchThemeInjector", asset_name = "NXThemesInstaller.nro" }
-sigpatch-updater = { repo = "ITotalJustice/sigpatch-updater", asset_name = "sigpatch-updater.nro" }
-simple-mod-downloader = { repo = "PoloNX/SimpleModDownloader", asset_name = "SimpleModDownloader.nro" }
-simple-mod-manager = { repo = "nadrino/SimpleModManager", asset_name = "SimpleModManager.nro" }
-switch-ident = { repo = "joel16/SwitchIdent", asset_name = "SwitchIdent.nro" }
-# tinfoil-installer = { url = "https://tinfoil.media/repo/Tinfoil%20Self%20Installer%20%5B050000BADDAD0000%5D%5B16.0%5D%5Bv2%5D.zip" }
-vgedit = { repo = "vgmoose/vgedit", asset_name = "vgedit.nro" }
+[[firmware]]
+url = "https://sigmapatches.coomer.party/sigpatches.zip"
 
-[atmosphere_modules]
-nx-ovlloader = { repo = "WerWolv/nx-ovlloader", asset_name = "nx-ovlloader.zip" }
-mission-control = { repo = "ndeadly/MissionControl", asset_regex = "MissionControl-(?:\\d+\\.\\d+\\.\\d+)-master-(?:\\w+).zip" }
+# --------------------
 
-[overlays]
-tesla-menu = { repo = "WerWolv/Tesla-Menu", asset_name = "ovlmenu.zip" }
-emuiibo = { repo = "XorTroll/emuiibo", asset_name = "emuiibo.zip" } # info: combined zip
-edizon = { repo = "proferabg/EdiZon-Overlay", asset_name = "ovlEdiZon.ovl" }
-sys-modules = { repo = "WerWolv/ovl-sysmodules", asset_name = "ovlSysmodules.ovl" }
-status-monitor = { repo = "masagrator/Status-Monitor-Overlay", asset_name = "Status-Monitor-Overlay.ovl" }
-sys-patch = { repo = "ITotalJustice/sys-patch", asset_name = "sys-patch.zip" } # info: combined zip
+[[payload]]
+repo = "Atmosphere-NX/Atmosphere"
+asset_name = "fusee.bin"
 
-[tegraexplorer_scripts]
-dump-saves = { repo = "suchmememanyskill/TegraScript", file = "scripts/Dump_saves.te" }
-system-restore = { repo = "suchmememanyskill/TegraScript", file = "scripts/SystemRestoreV3.te" }
-create-dirs = { repo = "suchmememanyskill/TegraScript", file = "scripts/createDirs.te" }
+# [[payload]]
+# repo = "shchmue/Lockpick_RCM"
+# asset_name = ""
+# asset_regex = ""
+
+# [[payload]]
+# url = "https://web.archive.org/web/20230506035121/https://github.com/shchmue/Lockpick_RCM/releases/download/v1.9.10/Lockpick_RCM.bin"
+
+[[payload]]
+url = "https://sigmapatches.coomer.party/Lockpick_RCM_v1.9.11.zip"
+remove = ["Lockpick_RCM_v1.9.11_sources.zip"]
+
+[[payload]]
+repo = "suchmememanyskill/TegraExplorer"
+asset_name = "TegraExplorer.bin"
+
+# --------------------
+
+[[nro_app]]
+repo = "fortheusers/hb-appstore"
+asset_name = "appstore.nro"
+
+[[nro_app]]
+repo = "tomvita/Breeze-Beta"
+asset_name = "Breeze.zip"
+remove = ["switch/reboot_to_hekate.nro", "switch/breeze/.Breeze.nro.star"]
+
+[[nro_app]]
+repo = "rashevskyv/dbi"
+asset_name = "DBI.nro"
+
+[[nro_app]]
+repo = "tomvita/EdiZon-SE"
+asset_name = "EdiZon.zip"
+remove = ["atmosphere", "switch/breeze"]
+
+[[nro_app]]
+repo = "mtheall/ftpd"
+asset_name = "ftpd.nro"
+
+[[nro_app]]
+repo = "J-D-K/JKSV"
+asset_name = "JKSV.nro"
+
+[[nro_app]]
+repo = "rdmrocha/linkalho"
+asset_regex = "linkalho-v(?:\\d+\\.\\d+\\.\\d+)\\.zip"
+
+# [[nro_app]]
+# url = "https://tinfoil.media/repo/Lithium%20%5B16.0%5D%5Bv2%5D.zip"
+
+[[nro_app]]
+repo = "joel16/NX-Shell"
+asset_name = "NX-Shell.nro"
+
+[[nro_app]]
+repo = "DarkMatterCore/nxdumptool"
+asset_name = "nxdumptool.nro"
+
+[[nro_app]]
+repo = "exelix11/SwitchThemeInjector"
+asset_name = "NXThemesInstaller.nro"
+
+[[nro_app]]
+repo = "ITotalJustice/sigpatch-updater"
+asset_name = "sigpatch-updater.nro"
+
+[[nro_app]]
+repo = "PoloNX/SimpleModDownloader"
+asset_name = "SimpleModDownloader.nro"
+
+[[nro_app]]
+repo = "nadrino/SimpleModManager"
+asset_name = "SimpleModManager.nro"
+
+[[nro_app]]
+repo = "meganukebmp/Switch_90DNS_tester"
+asset_name = "Switch_90DNS_tester.nro"
+
+[[nro_app]]
+repo = "joel16/SwitchIdent"
+asset_name = "SwitchIdent.nro"
+
+# [[nro_app]]
+# url = "https://tinfoil.media/repo/Tinfoil%20Self%20Installer%20%5B050000BADDAD0000%5D%5B16.0%5D%5Bv2%5D.zip"
+
+[[nro_app]]
+repo = "vgmoose/vgedit"
+asset_name = "vgedit.nro"
+
+# --------------------
+
+[[atmosphere_module]]
+repo = "WerWolv/nx-ovlloader"
+asset_name = "nx-ovlloader.zip"
+
+[[atmosphere_module]]
+repo = "ndeadly/MissionControl"
+asset_regex = "MissionControl-(?:\\d+\\.\\d+\\.\\d+)-master-(?:\\w+).zip"
+
+# --------------------
+
+[[overlay]]
+repo = "WerWolv/Tesla-Menu"
+asset_name = "ovlmenu.zip"
+
+[[overlay]]
+repo = "XorTroll/emuiibo"
+asset_name = "emuiibo.zip" # info: combined zip
+
+[[overlay]]
+repo = "proferabg/EdiZon-Overlay"
+asset_name = "ovlEdiZon.ovl"
+
+[[overlay]]
+repo = "WerWolv/ovl-sysmodules"
+asset_name = "ovlSysmodules.ovl"
+
+[[overlay]]
+repo = "masagrator/Status-Monitor-Overlay"
+asset_name = "Status-Monitor-Overlay.ovl"
+
+[[overlay]]
+repo = "ITotalJustice/sys-patch"
+asset_name = "sys-patch.zip"     # info: combined zip
+
+[[overlay]]
+repo = "eradicatinglove/Quick-Reboot"
+asset_name = "Quick-Reboot.ovl"
+
+# --------------------
+
+[[tegraexplorer_script]]
+repo = "suchmememanyskill/TegraScript"
+file = "scripts/Dump_saves.te"
+
+[[tegraexplorer_script]]
+repo = "suchmememanyskill/TegraScript"
+file = "scripts/SystemRestoreV3.te"
+
+[[tegraexplorer_script]]
+repo = "suchmememanyskill/TegraScript"
+file = "scripts/createDirs.te"

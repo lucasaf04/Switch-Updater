@@ -14,12 +14,12 @@ def parse_downloads_toml() -> List[Section]:
     with open(DOWNLOADS_TOML, "r", encoding="utf-8") as toml_file:
         toml_string = toml_file.read()
 
-    toml_dict: Dict[str, Dict[str, Dict[str, Any]]] = toml.loads(toml_string)
+    toml_dict: Dict[str, List[Dict[str, Any]]] = toml.loads(toml_string)
 
     section_list: List[Section] = []
     for s_name, s_data in toml_dict.items():
         asset_list: List[SectionItem] = []
-        for d_name, d_data in s_data.items():
+        for d_data in s_data:
             try:
                 downloader = createDownloader(
                     d_data.get("repo"),
@@ -29,7 +29,7 @@ def parse_downloads_toml() -> List[Section]:
                     d_data.get("url"),
                 )
             except RuntimeError as err:
-                raise DownloaderInitError(str(err), d_name) from None
+                raise DownloaderInitError(str(err), s_name) from None
 
             asset_list.append(
                 SectionItem(
