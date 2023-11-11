@@ -9,7 +9,7 @@ repo = "Atmosphere-NX/Atmosphere"
 asset_regex = "atmosphere-(?:\\d+\\.\\d+\\.\\d+)-master-(?:\\w+)\\+hbl-(?:\\d+\\.\\d+\\.\\d+)\\+hbmenu-(?:\\d+\\.\\d+\\.\\d+)\\.zip"
 
 [[firmware]]
-url = "https://sigmapatches.coomer.party/sigpatches.zip"
+url = "https://sigmapatches.coomer.party/sigpatches.zip?latest"
 
 # --------------------
 

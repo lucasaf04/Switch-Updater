@@ -1,10 +1,10 @@
 import logging
 import re
 import shutil
-import urllib.parse
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
+from urllib.parse import unquote, urlparse, urlunparse
 
 import requests
 
@@ -53,7 +53,7 @@ def _get_default_branch(repo: str, token: Optional[str]) -> Optional[str]:
 
 
 def _download_file_to(target_path: Path, url: str) -> Optional[Path]:
-    filename = urllib.parse.unquote(Path(url).name)
+    filename = _get_file_name_from_url(url)
 
     try:
         response = requests.get(url, timeout=10, headers={"cache-control": "no-cache"})
@@ -70,6 +70,21 @@ def _download_file_to(target_path: Path, url: str) -> Optional[Path]:
     with open(file_path, "wb") as file:
         file.write(response.content)
         return file_path
+
+
+def _get_file_name_from_url(url: str) -> str:
+    parsed_url = urlparse(unquote(url))
+    path_url = urlunparse(
+        (
+            parsed_url.scheme,
+            parsed_url.netloc,
+            parsed_url.path,
+            "",
+            "",
+            "",
+        )
+    )
+    return Path(path_url).name
 
 
 @dataclass(frozen=True)
@@ -190,7 +205,7 @@ class RawUrl:
     def download(
         self,
     ) -> Optional[Path]:
-        print(f"\t{Path(self._url).name}")
+        print(f"\t{_get_file_name_from_url(self._url)}")
 
         downloaded_file_path = _download_file_to(DOWNLOADS_TEMP_PATH, self._url)
 
