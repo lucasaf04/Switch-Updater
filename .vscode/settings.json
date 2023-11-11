@@ -3,11 +3,12 @@
   "cSpell.words": [
     "bootloader",
     "ctcaer",
-    "hekate",
-    "sdout",
-    "mariko",
-    "github",
     "erista",
+    "github",
+    "hekate",
+    "levelname",
+    "mariko",
+    "sdout",
     "tegraexplorer"
   ],
   "files.associations": {
