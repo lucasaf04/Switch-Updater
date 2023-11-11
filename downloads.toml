@@ -137,7 +137,7 @@ asset_name = "ovlSysmodules.ovl"
 
 [[overlay]]
 repo = "masagrator/Status-Monitor-Overlay"
-asset_name = "Status-Monitor-Overlay.ovl"
+asset_name = "Status-Monitor-Overlay.zip"
 
 [[overlay]]
 repo = "ITotalJustice/sys-patch"
