@@ -8,8 +8,8 @@ from urllib.parse import unquote, urlparse, urlunparse
 
 import requests
 
-from DownloaderLock import DownloaderLock
-from Paths import DOWNLOADS_TEMP_PATH
+from downloader_lock import DownloaderLock
+from paths import DOWNLOADS_TEMP_PATH
 
 
 class DownloadError(RuntimeError):
@@ -236,7 +236,7 @@ class Downloader:
         return downloaded_file_path
 
 
-def createDownloader(
+def create_downloader(
     repo: Optional[str],
     asset_name: Optional[str],
     asset_regex: Optional[str],

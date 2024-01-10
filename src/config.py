@@ -4,10 +4,10 @@ from typing import Any, Dict, List, Optional
 
 import toml
 
-from Downloader import DownloaderInitError, createDownloader
-from Paths import DOWNLOADS_TOML, GITHUB_TOKEN
-from Section import Section, SectionItem
-from SectionId import getSectionId
+from downloader import DownloaderInitError, create_downloader
+from paths import DOWNLOADS_TOML, GITHUB_TOKEN
+from section import Section, SectionItem
+from section_id import get_section_id
 
 
 def parse_downloads_toml() -> List[Section]:
@@ -21,7 +21,7 @@ def parse_downloads_toml() -> List[Section]:
         asset_list: List[SectionItem] = []
         for d_data in s_data:
             try:
-                downloader = createDownloader(
+                downloader = create_downloader(
                     d_data.get("repo"),
                     d_data.get("asset_name"),
                     d_data.get("asset_regex"),
@@ -38,7 +38,7 @@ def parse_downloads_toml() -> List[Section]:
                 )
             )
 
-        section_list.append(Section(getSectionId(s_name), asset_list))
+        section_list.append(Section(get_section_id(s_name), asset_list))
 
     return section_list
 

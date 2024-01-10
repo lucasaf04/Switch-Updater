@@ -53,9 +53,9 @@ repo = "tomvita/EdiZon-SE"
 asset_name = "EdiZon.zip"
 remove = ["atmosphere", "switch/breeze"]
 
-[[nro_app]]
-repo = "mtheall/ftpd"
-asset_name = "ftpd.nro"
+# [[nro_app]]
+# repo = "mtheall/ftpd"
+# asset_name = "ftpd.nro"
 
 [[nro_app]]
 repo = "J-D-K/JKSV"
@@ -68,9 +68,9 @@ asset_regex = "linkalho-v(?:\\d+\\.\\d+\\.\\d+)\\.zip"
 # [[nro_app]]
 # url = "https://tinfoil.media/repo/Lithium%20%5B16.0%5D%5Bv2%5D.zip"
 
-[[nro_app]]
-repo = "joel16/NX-Shell"
-asset_name = "NX-Shell.nro"
+# [[nro_app]]
+# repo = "joel16/NX-Shell"
+# asset_name = "NX-Shell.nro"
 
 [[nro_app]]
 repo = "DarkMatterCore/nxdumptool"
@@ -96,16 +96,16 @@ asset_name = "SimpleModManager.nro"
 repo = "meganukebmp/Switch_90DNS_tester"
 asset_name = "Switch_90DNS_tester.nro"
 
-[[nro_app]]
-repo = "joel16/SwitchIdent"
-asset_name = "SwitchIdent.nro"
+# [[nro_app]]
+# repo = "joel16/SwitchIdent"
+# asset_name = "SwitchIdent.nro"
 
 # [[nro_app]]
 # url = "https://tinfoil.media/repo/Tinfoil%20Self%20Installer%20%5B050000BADDAD0000%5D%5B16.0%5D%5Bv2%5D.zip"
 
-[[nro_app]]
-repo = "vgmoose/vgedit"
-asset_name = "vgedit.nro"
+# [[nro_app]]
+# repo = "vgmoose/vgedit"
+# asset_name = "vgedit.nro"
 
 # --------------------
 

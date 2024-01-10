@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import List
 
-from Downloader import Downloader
-from SectionId import SectionId
+from downloader import Downloader
+from section_id import SectionId
 
 
 @dataclass(frozen=True)

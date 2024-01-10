@@ -6,10 +6,10 @@ from pathlib import Path
 from typing import List, Optional, Union
 from zipfile import ZipFile
 
-from Config import get_github_token, parse_downloads_toml
-from Downloader import DownloadError
-from DownloaderLock import DownloaderLock, parse_downloads_lock, save_downloads_lock
-from Paths import (
+from config import get_github_token, parse_downloads_toml
+from downloader import DownloadError
+from downloader_lock import DownloaderLock, parse_downloads_lock, save_downloads_lock
+from paths import (
     BASE_PATH,
     DOWNLOADS_CACHE_PATH,
     DOWNLOADS_LOCK,
@@ -18,8 +18,8 @@ from Paths import (
     ROOT_SAVE_PATH,
     SAVE_PATHS,
 )
-from Section import Section
-from SectionId import SectionId
+from section import Section
+from section_id import SectionId
 
 
 def _extract_zip(zip_file: ZipFile, members: Optional[List[str]], target_path: Path):
@@ -120,7 +120,7 @@ def remove_from_root(to_remove: List[str]) -> None:
 def move_nro_apps_into_folders() -> None:
     nro_apps_path = SAVE_PATHS[SectionId.NRO_APP]
     if nro_apps_path is None:
-        return None
+        return
 
     for item in nro_apps_path.iterdir():
         if item.is_file() and item.suffix == ".nro":

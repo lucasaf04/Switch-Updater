@@ -2,7 +2,7 @@ from pathlib import Path
 from tempfile import mkdtemp
 from typing import Dict
 
-from SectionId import SectionId
+from section_id import SectionId
 
 BASE_PATH: Path = Path.cwd()
 DOWNLOADS_TOML: Path = BASE_PATH / "downloads.toml"

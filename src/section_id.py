@@ -22,7 +22,7 @@ _nameToSectionId = {
 }
 
 
-def getSectionId(section_name: str):
+def get_section_id(section_name: str):
     result = _nameToSectionId.get(section_name)
     if result is None:
         raise RuntimeError(f"Unsupported section name: `{section_name}`")

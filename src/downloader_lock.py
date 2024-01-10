@@ -5,7 +5,7 @@ from typing import List
 
 import toml
 
-from Paths import DOWNLOADS_CACHE_PATH, DOWNLOADS_LOCK
+from paths import DOWNLOADS_CACHE_PATH, DOWNLOADS_LOCK
 
 
 @dataclass(frozen=True)
