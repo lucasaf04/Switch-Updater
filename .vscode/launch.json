@@ -6,7 +6,7 @@
     "configurations": [
         {
             "name": "Python: main",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "src/main.py",
             "args": ["--log=DEBUG", "--mariko", "--pack=DEBUG"],

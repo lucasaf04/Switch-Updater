@@ -1,5 +1,4 @@
 {
-  "python.analysis.typeCheckingMode": "basic",
   "cSpell.words": [
     "bootloader",
     "ctcaer",
@@ -13,5 +12,7 @@
   ],
   "files.associations": {
     "downloads.lock": "toml"
-  }
+  },
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.typeCheckingMode": "basic"
 }

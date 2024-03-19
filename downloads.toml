@@ -9,7 +9,7 @@ repo = "Atmosphere-NX/Atmosphere"
 asset_regex = "atmosphere-(?:\\d+\\.\\d+\\.\\d+)-master-(?:\\w+)\\+hbl-(?:\\d+\\.\\d+\\.\\d+)\\+hbmenu-(?:\\d+\\.\\d+\\.\\d+)\\.zip"
 
 [[firmware]]
-url = "https://sigmapatches.coomer.party/sigpatches.zip?latest"
+url = "https://sigmapatches.su/sigpatches.zip"
 
 # --------------------
 
@@ -17,16 +17,13 @@ url = "https://sigmapatches.coomer.party/sigpatches.zip?latest"
 repo = "Atmosphere-NX/Atmosphere"
 asset_name = "fusee.bin"
 
+# unavailable
 # [[payload]]
 # repo = "shchmue/Lockpick_RCM"
-# asset_name = ""
-# asset_regex = ""
-
-# [[payload]]
-# url = "https://web.archive.org/web/20230506035121/https://github.com/shchmue/Lockpick_RCM/releases/download/v1.9.10/Lockpick_RCM.bin"
+# asset_name = "Lockpick_RCM.bin"
 
 [[payload]]
-url = "https://sigmapatches.coomer.party/Lockpick_RCM_v1.9.11.zip"
+url = "https://sigmapatches.su/Lockpick_RCM_v1.9.11.zip"
 remove = ["Lockpick_RCM_v1.9.11_sources.zip"]
 
 [[payload]]
@@ -61,9 +58,10 @@ remove = ["atmosphere", "switch/breeze"]
 repo = "J-D-K/JKSV"
 asset_name = "JKSV.nro"
 
-[[nro_app]]
-repo = "rdmrocha/linkalho"
-asset_regex = "linkalho-v(?:\\d+\\.\\d+\\.\\d+)\\.zip"
+# unavailable
+# [[nro_app]]
+# repo = "rdmrocha/linkalho"
+# asset_regex = "linkalho-v(?:\\d+\\.\\d+\\.\\d+)\\.zip"
 
 # [[nro_app]]
 # url = "https://tinfoil.media/repo/Lithium%20%5B16.0%5D%5Bv2%5D.zip"
@@ -80,9 +78,10 @@ asset_name = "nxdumptool.nro"
 repo = "exelix11/SwitchThemeInjector"
 asset_name = "NXThemesInstaller.nro"
 
-[[nro_app]]
-repo = "ITotalJustice/sigpatch-updater"
-asset_name = "sigpatch-updater.nro"
+# unavailable
+# [[nro_app]]
+# repo = "ITotalJustice/sigpatch-updater"
+# asset_name = "sigpatch-updater.nro"
 
 [[nro_app]]
 repo = "PoloNX/SimpleModDownloader"
@@ -139,9 +138,13 @@ asset_name = "ovlSysmodules.ovl"
 repo = "masagrator/Status-Monitor-Overlay"
 asset_name = "Status-Monitor-Overlay.zip"
 
+# unavailable
+# [[overlay]]
+# repo = "ITotalJustice/sys-patch"
+# asset_name = "sys-patch.zip"     # info: combined zip
+
 [[overlay]]
-repo = "ITotalJustice/sys-patch"
-asset_name = "sys-patch.zip"     # info: combined zip
+url = "https://sigmapatches.su/sys-patch.zip" # info: combined zip
 
 [[overlay]]
 repo = "eradicatinglove/Quick-Reboot"
